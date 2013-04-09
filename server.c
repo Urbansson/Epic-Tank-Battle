@@ -78,8 +78,9 @@ int main(void)
     int yes=1;
     char s[INET6_ADDRSTRLEN];
     int rv;
-    char buffer[7]= "Hejsan!";
+    char buffer[]= "Hello World!\n";
     
+    int i;
     
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -147,15 +148,17 @@ int main(void)
         
         send(new_fd, "Hello, world!\n", 14, 0);
         
-        
-        sendto(very_ugly_array.udpsockfd, buffer, strlen(buffer)+1, 0, very_ugly_array.p->ai_addr, very_ugly_array.p->ai_addrlen);
-        
-
-        
         printf("server: got connection from %s\n", s);
-        
+
+        for (i = 0; i != 10; i++)
+        {
+            
+        sendto(very_ugly_array.udpsockfd, buffer, strlen(buffer)+1, 0, very_ugly_array.p->ai_addr, very_ugly_array.p->ai_addrlen);
+        }
+
+                
         close(new_fd);  // parent doesn't need this
-        
+        close(very_ugly_array.udpsockfd);
         
         }
     
