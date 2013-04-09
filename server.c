@@ -1,6 +1,6 @@
-// To try it out:
-// telnet 127.0.0.1 5000
-//
+/*
+ ** server.c -- a stream socket server demo
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,11 +15,10 @@
 //#include <sys/wait.h>
 //#include <signal.h>
 
-#define SUCCESS 0
-#define ERROR   1
+#define PORT "5000"  // the port users will be connecting to
 
-#define PORT "5000"
-#define BACKLOG 10
+#define BACKLOG 10     // how many pending connections queue will hold
+
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -31,19 +30,16 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-
 int main(void)
 {
     int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
-    struct addrinfo hints, *servinfo;   // servers's information
+    struct addrinfo hints, *servinfo, *p;
     struct sockaddr_storage their_addr; // connector's address information
     socklen_t sin_size;
-    char s[20];
-    
-    //struct sigaction sa;
-    //int yes=1;
-    //char s[INET6_ADDRSTRLEN];
-    //int rv;
+    struct sigaction sa;
+    int yes=1;
+    char s[INET6_ADDRSTRLEN];
+    int rv;
     
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -51,21 +47,11 @@ int main(void)
     hints.ai_flags = AI_PASSIVE; // use my IP
     
     
-    /*
     if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
-    */
-    getaddrinfo(NULL, PORT, &hints, &servinfo);
-
     
-    sockfd = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
-    
-    bind(sockfd, servinfo->ai_addr, servinfo->ai_addrlen);
-
-    
-    /*
     // loop through all the results and bind to the first we can
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((sockfd = socket(p->ai_family, p->ai_socktype,
@@ -74,11 +60,13 @@ int main(void)
             continue;
         }
         
+        /*
         if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
                        sizeof(int)) == -1) {
             perror("setsockopt");
             exit(1);
         }
+        */
         
         if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
             close(sockfd);
@@ -94,8 +82,6 @@ int main(void)
         return 2;
     }
     
-     */
-    
     freeaddrinfo(servinfo); // all done with this structure
     
     if (listen(sockfd, BACKLOG) == -1) {
@@ -105,66 +91,23 @@ int main(void)
     
     printf("server: waiting for connections...\n");
     
-    while (1)
-    {
-        sin_size = sizeof(sin_size);
-        new_fd = accept(sockfd, (struct sockaddr *) &sin_size, &sin_size);
-        if(new_fd<0) {
-            perror("cannot accept connection ");
-            return ERROR;
+    while(1)
+    {  // main accept() loop
+        sin_size = sizeof their_addr;
+        new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
+        if (new_fd == -1) {
+            perror("accept");
+            continue;
         }
-        send(new_fd, "Hello World!\n", 14, 0);
         
+        send(new_fd, "Hello, world!\n", 14, 0);
         
         inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
-        printf("server: got connection from %s \n", s);
         
-        close(new_fd);
-    }
-    
-    /*
-    int sd, newSd;  // listen on sock_fd, new connection on new_fd
-    struct sockaddr_in cliAddr, servAddr;
-    socklen_t cliLen;
-
-    /* create socket */   /*
-    sd = socket(AF_INET, SOCK_STREAM, 0);
-    if(sd<0) {
-        perror("cannot open socket ");
-        return ERROR;
-    }
-    
-    /* bind server port *//*
-    servAddr.sin_family = AF_INET;
-    servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servAddr.sin_port = htons(SERVER_PORT);
-
-    
-    if(bind(sd, (struct sockaddr *) &servAddr, sizeof(servAddr))<0) {
-        perror("cannot bind port ");
-        return ERROR;
-    }
-    
-    listen(sd,5);
-
-    printf("server: waiting for connections...\n");
-
-    
-    while (1)
-    {
-        cliLen = sizeof(cliAddr);
-        newSd = accept(sd, (struct sockaddr *) &cliAddr, &cliLen);
-        if(newSd<0) {
-            perror("cannot accept connection ");
-            return ERROR;
-        }
-        send(newSd, "Hello World!\n", 14, 0);
+        printf("server: got connection from %s\n", s);
         
-        close(newSd);
+        close(new_fd);  // parent doesn't need this
     }
-    
-    */
-    
     
     return 0;
 }
