@@ -51,7 +51,6 @@ int main(void)
     {
         memset(msg, 0, MAX_MSG);
 
-        
     
         servLen = sizeof(servAddr);
         recvfrom(fd, msg, MAX_MSG, 0, (struct sockaddr *) &servAddr, &servLen);
