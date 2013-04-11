@@ -5,8 +5,11 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
+#include <pthread.h>
+
 #include "internetFuncs.h"
 
+#define MAX_PLAYERS 2
 
 /*
 #define PORT 5000  // the port users will be connecting to
@@ -15,31 +18,63 @@
 #define ERROR -1
 #define SUCCESS 0
 
-
-struct tcp_info
-{
-    int sd;
-    struct sockaddr_in cliAddr;
-    socklen_t cliLen;
-};
-
-struct udp_info {
-    int udpsocksd;
-    struct addrinfo hints, *servinfo, *p;
-};
-
-struct udp_info udpCliInfo;
-
-int tcp_init(void);
-
-int udp_init(char * remote_ip, char * port);
 */
+
+struct client
+{
+    pthread_t threadId;         //Thread Id
+    int mySlot;                 //My Slot on the server
+    int sd;                     //TCP-Socket descriptor
+    char client_ip_addr[20];    //Clients ip-address
+    int free;                   //Flag that indicates if the slot is free
+};
+
+
+void *hello_message_function( void *parameters )
+{
+    
+    struct client * clientInfo = (struct client*)parameters;
+
+    send(clientInfo->sd, "Hello World\n", sizeof("Hello World\n"), 0);
+
+    sleep(10);
+    
+    clientInfo->free = 0;
+    
+    close(clientInfo->sd);
+    
+    return NULL;
+}
+
+
+int find_free_slot(struct client clientInfo[], int n)
+{
+    int i;
+    for(i=0;i<n;i++)
+        if(clientInfo[i].free == 0)
+            return i;
+    return -1;
+}
+
+
+
+
 int main(void)
 {
-    struct tcp_info cliInfo;
+    
+    int sd, newSd;
+    struct sockaddr_in cliAddr;
+    socklen_t cliLen;
+    
     struct udp_info udpCliInfo;
-
-    int sd;
+    
+    
+    struct client clientInfo[MAX_PLAYERS];
+    
+    int clientSlot;
+    
+    int i;
+    
     char s[40];
     char buffer[128] = "Hello World!\n";
     
@@ -50,103 +85,61 @@ int main(void)
     }
 
     printf("Waiting for connection... \n");
-
+    
+    
+    for (i = 0; i <= MAX_PLAYERS; i++)
+    {
+        clientInfo[i].free = 0;
+        printf("Setting on %d is %d\n", i, clientInfo[i].free);
+    }
+    
+    
     while (1)
     {
     
-        cliInfo.cliLen = sizeof(cliInfo.cliAddr);
-        cliInfo.sd = accept(sd, (struct sockaddr *) &cliInfo.cliAddr, &cliInfo.cliLen);
-        if (cliInfo.sd == -1)
+        cliLen = sizeof(cliAddr);
+        newSd = accept(sd, (struct sockaddr *) &cliAddr, &cliLen);
+        
+        if (newSd == -1)
         {
             perror("accept");
-            return ERROR;
-            break;
+            continue;
         }
         
-        send(cliInfo.sd, "Hello World!\n", 14, 0);
-     
+        clientSlot = find_free_slot(clientInfo, MAX_PLAYERS);   //Finds the first free slot
         
-        inet_ntop(cliInfo.cliAddr.sin_family, &cliInfo.cliAddr.sin_addr, s, sizeof s);
-            
-        printf("Connected %s\n", s);
+        if(clientSlot==-1)
+        {
+            send(newSd,"No free slots, try again later!\n", sizeof("No free slots, try again later!\n"), 0);
+            close(newSd); // Close the socket descriptor to indicate to client that
+            continue;     // we have no more space for it. Then goto beginning of loop.
+        }
         
+        clientInfo[clientSlot].free = 1;            // Sets the client slot so it is taken
+        clientInfo[clientSlot].sd = newSd;          // Gives the slot the socket descriptor
+        clientInfo[clientSlot].mySlot = clientSlot; // Gives the Slot number 
+        
+        
+        inet_ntop(cliAddr.sin_family, &cliAddr.sin_addr, clientInfo[clientSlot].client_ip_addr, sizeof (clientInfo[clientSlot].client_ip_addr));
+        // Gets the clients ip address and stores it
+
+
+        pthread_create( &clientInfo[clientSlot].threadId, NULL, hello_message_function, &(clientInfo[clientSlot]));
+        //Main thread for the connected client, Main programm will serv new connections
+
+        
+         /*
         udp_init(s, "6000", &udpCliInfo);
         
         sendto(udpCliInfo.udpsocksd, buffer, strlen(buffer)+1, 0, udpCliInfo.p->ai_addr, udpCliInfo.p->ai_addrlen);
+                
+         */
         
-        close(cliInfo.sd);
-
     }
-    close(sd);
+
+    //close(sd);
 
     
     return 0;
 }
 
-/*
-int tcp_init(void)
-{
-    int sd;
-    struct sockaddr_in servAddr;
-    int yes = 1;
-
-    sd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sd <0 )
-    {
-        perror("Error opening socket!\n");
-        return ERROR;
-    }
-
-    servAddr.sin_family = AF_INET;
-    servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servAddr.sin_port = htons(PORT);
-    memset(servAddr.sin_zero,'\0',sizeof(servAddr.sin_zero));
-
-    if (setsockopt(sd,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(int)) == -1) {
-        perror("setsockopt");
-        return ERROR;
-    }
-    
-    if (bind(sd, (struct sockaddr *) &servAddr, sizeof(servAddr))<0)
-    {
-        perror("Error binding socket\n");
-        return ERROR;
-    }
-    
-
-    listen(sd, BACKLOG);
-    
-    return sd;
-}
-
-int udp_init(char * remote_ip, char * port)
-{
-    int rv;
-
-    memset(&(udpCliInfo.hints), 0, sizeof udpCliInfo.hints);
-    udpCliInfo.hints.ai_family = AF_UNSPEC;
-    udpCliInfo.hints.ai_socktype = SOCK_DGRAM;
-
-    if ((rv = getaddrinfo(remote_ip , port, &(udpCliInfo.hints), &(udpCliInfo.servinfo))) != 0)
-    {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-        return(ERROR);
-    }
-    
-    for(udpCliInfo.p = udpCliInfo.servinfo;udpCliInfo.p != NULL;udpCliInfo.p = udpCliInfo.p->ai_next)
-    {
-        if ((udpCliInfo.udpsocksd = socket(udpCliInfo.p->ai_family, udpCliInfo.p->ai_socktype, udpCliInfo.p->ai_protocol)) == -1)
-        {
-            perror("Preparing UDP: socket");
-            continue;
-        }
-        break;
-    }
-
-
-    if (udpCliInfo.p == NULL) {
-        fprintf(stderr, "Preparing UDP: failed to bind socket\n");
-        return(ERROR);
-    }
-}
- */

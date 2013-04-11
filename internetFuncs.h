@@ -8,14 +8,15 @@
 #define ERROR -1
 #define SUCCESS 0
 
-
+/*
 struct tcp_info
 {
     int sd;
     struct sockaddr_in cliAddr;
     socklen_t cliLen;
 };
-
+*/
+ 
 struct udp_info {
     int udpsocksd;
     struct addrinfo hints, *servinfo, *p;
