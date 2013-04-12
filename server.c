@@ -26,8 +26,11 @@ struct client
     int mySlot;                 //My Slot on the server
     int sd;                     //TCP-Socket descriptor
     char client_ip_addr[20];    //Clients ip-address
-    int free;                   //Flag that indicates if the slot is free
+    int free;                   //Flag that indicates if the slot is free. 1 == taken 0 == free
 };
+
+struct udp_info udpCliInfo[MAX_PLAYERS];
+
 
 
 void *hello_message_function( void *parameters )
@@ -37,6 +40,9 @@ void *hello_message_function( void *parameters )
 
     send(clientInfo->sd, "Hello World\n", sizeof("Hello World\n"), 0);
 
+    
+    
+    
     sleep(10);
     
     clientInfo->free = 0;
@@ -45,6 +51,25 @@ void *hello_message_function( void *parameters )
     
     return NULL;
 }
+
+
+void *client_handler_function(void *parameters)
+{
+
+    char buffer[128] = "HEllo Mister!\n";
+    
+    struct client * clientInfo = (struct client*)parameters;
+
+    udp_init(clientInfo->client_ip_addr, "6000", &udpCliInfo[clientInfo->mySlot]);
+
+    
+    sendto(udpCliInfo[clientInfo->mySlot].udpsocksd, buffer, strlen(buffer)+1, 0, udpCliInfo[clientInfo->mySlot].p->ai_addr, udpCliInfo[clientInfo->mySlot].p->ai_addrlen);
+
+
+
+
+}
+
 
 
 int find_free_slot(struct client clientInfo[], int n)
@@ -66,7 +91,7 @@ int main(void)
     struct sockaddr_in cliAddr;
     socklen_t cliLen;
     
-    struct udp_info udpCliInfo;
+    //struct udp_info udpCliInfo;
     
     
     struct client clientInfo[MAX_PLAYERS];
@@ -125,6 +150,10 @@ int main(void)
 
 
         pthread_create( &clientInfo[clientSlot].threadId, NULL, hello_message_function, &(clientInfo[clientSlot]));
+        
+        
+        pthread_create( &clientInfo[clientSlot].threadId, NULL, client_handler_function, &(clientInfo[clientSlot]));
+
         //Main thread for the connected client, Main programm will serv new connections
 
         
