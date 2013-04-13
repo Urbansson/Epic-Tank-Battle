@@ -1,11 +1,3 @@
-//
-//  client.c
-//  
-//
-//  Created by Theodor Brandt on 2013-04-08.
-//
-//
-
 #include <stdio.h>
 #include <string.h>
 
@@ -165,8 +157,8 @@ int main(int argc, char *argv[])
 
     
     
-    //while (1)
-    //{
+    while (1)
+    {
         
         memset(msg, 0, MAX_MSG);
 
@@ -176,7 +168,7 @@ int main(int argc, char *argv[])
     
         printf("Message from server: %s", msg);
     
-   // }
+    }
     
     close(tcpSd);
     close(udpSd);
