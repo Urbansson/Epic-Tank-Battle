@@ -165,12 +165,11 @@ int main(int argc, char *argv[])
     
      
      */
-    close(tcpSd);
-    close(udpSd);
+
     
     
-    while (1)
-    {
+    //while (1)
+    //{
         
         memset(msg, 0, MAX_MSG);
 
@@ -180,9 +179,11 @@ int main(int argc, char *argv[])
     
         printf("Message from server: %s", msg);
     
-    }
-     
-     
+   // }
+    
+    close(tcpSd);
+    close(udpSd);
+    
     
     return 0;
 }
