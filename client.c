@@ -28,12 +28,6 @@ int client_udp_init(/*char portc[]*/)
     struct sockaddr_in cliAddr;
     int udpSd, bindCheck;
     
-    /*
-    int port;
-    
-    port = atoi(portc);
-    */
-    
     udpSd=socket(AF_INET, SOCK_DGRAM, 0);
     if(udpSd<0) {
         printf("cannot open socket \n");
@@ -105,8 +99,9 @@ int client_tcp_init(char *serverIp, char *serverPort)
 
 
 
-void handle_keyboard(SDL_Event * event, int * quit)
+void handle_keyboard(SDL_Event * event, int * quit, int tcpSd)
 {
+        
     while( SDL_PollEvent ( event ))
     {
         switch (event->type)
@@ -123,10 +118,22 @@ void handle_keyboard(SDL_Event * event, int * quit)
             {
                 switch(event -> key.keysym.sym)
                 {
-                    case SDLK_w: printf("W \n"); break;
-                    case SDLK_s: printf("S \n"); break;
-                    case SDLK_a: printf("A \n"); break;
-                    case SDLK_d: printf("D \n"); break;
+                    case SDLK_w:
+                        send(tcpSd, "W", sizeof("W"), 0);
+                        //printf("W \n");
+                        break;
+                    case SDLK_s:
+                        send(tcpSd, "S", sizeof("S"), 0);
+                        //printf("S \n");
+                        break;
+                    case SDLK_a:
+                        send(tcpSd, "A", sizeof("A"), 0);
+                        //printf("A \n");
+                        break;
+                    case SDLK_d:
+                        send(tcpSd, "D", sizeof("D"), 0);
+                        //printf("D \n");
+                        break;
                 }
             }
 
@@ -182,14 +189,6 @@ int main(int argc, char *argv[])
     }
     
     
-    //printf("waiting for data on port UDP %s\n", argv[3]);
-    
-    printf("waiting for data on port UDP %u\n", LOCAL_PORT);
-
-    
-    //while (1)
-    //{
-
         int quit=0;
 
         init();
@@ -197,9 +196,13 @@ int main(int argc, char *argv[])
         SDL_Event event;
         while (quit==0)
         {   
-             handle_keyboard(&event,&quit);
+             handle_keyboard(&event,&quit, tcpSd);
         }
-        
+    /*
+    
+    while (1)
+    {
+
         memset(msg, 0, MAX_MSG);
 
     
@@ -208,7 +211,8 @@ int main(int argc, char *argv[])
     
         printf("Message from server: %s", msg);
     
-   // }
+   }
+    */
     
     close(tcpSd);
     close(udpSd);
