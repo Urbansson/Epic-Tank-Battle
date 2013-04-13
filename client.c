@@ -1,3 +1,11 @@
+//
+//  client.c
+//  
+//
+//  Created by Theodor Brandt on 2013-04-08.
+//
+//
+
 #include <stdio.h>
 #include <string.h>
 
@@ -7,15 +15,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-
+#include <SDL/SDL.h>
+#include <SDL/SDL_opengl.h>
 
 #include <unistd.h> /* close() */
 
-
 #define LOCAL_PORT 6000
 #define MAX_MSG 512
-
-
 
 int client_udp_init(/*char portc[]*/)
 {
@@ -99,6 +105,56 @@ int client_tcp_init(char *serverIp, char *serverPort)
 
 
 
+void handle_keyboard(SDL_Event * event, int * quit)
+{
+    while( SDL_PollEvent ( event ))
+    {
+        switch (event->type)
+        {
+            case SDL_MOUSEBUTTONDOWN:
+            {
+                switch(event->button.button)
+                {
+                    case SDL_BUTTON_LEFT: printf("LMB \n"); break;
+                    case SDL_BUTTON_RIGHT: printf("RMB \n"); break;
+                }
+            }
+            case SDL_KEYDOWN:
+            {
+                switch(event -> key.keysym.sym)
+                {
+                    case SDLK_w: printf("W \n"); break;
+                    case SDLK_s: printf("S \n"); break;
+                    case SDLK_a: printf("A \n"); break;
+                    case SDLK_d: printf("D \n"); break;
+                }
+            }
+
+        }
+    }
+
+        if(event->type==SDL_QUIT)
+        {
+            *quit = 1;
+        }
+}
+
+
+int init()
+{
+    if(SDL_Init( SDL_INIT_EVERYTHING) < 0)
+    {
+        return 0;
+    }
+
+    if(SDL_SetVideoMode(800,600,32,SDL_SWSURFACE)==NULL)
+    {
+        return 0;
+    }
+    return 1;
+}
+
+
 int main(int argc, char *argv[])
 {
     int udpSd;
@@ -157,8 +213,18 @@ int main(int argc, char *argv[])
 
     
     
-    while (1)
-    {
+    //while (1)
+    //{
+
+        int quit=0;
+
+        init();
+
+        SDL_Event event;
+        while (quit==0)
+        {   
+             handle_keyboard(&event,&quit);
+        }
         
         memset(msg, 0, MAX_MSG);
 
@@ -168,7 +234,7 @@ int main(int argc, char *argv[])
     
         printf("Message from server: %s", msg);
     
-    }
+   // }
     
     close(tcpSd);
     close(udpSd);
