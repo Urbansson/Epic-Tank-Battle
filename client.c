@@ -170,7 +170,6 @@ int main(int argc, char *argv[])
     while (1)
     {
         
-        
         memset(msg, 0, MAX_MSG);
 
     

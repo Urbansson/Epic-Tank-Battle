@@ -268,7 +268,7 @@ void *client_handler_function(void *parameters)
     
     sendto(udpCliInfo[clientInfo->mySlot].udpsocksd, buffer, strlen(buffer)+1, 0, udpCliInfo[clientInfo->mySlot].p->ai_addr, udpCliInfo[clientInfo->mySlot].p->ai_addrlen);
     
-     *//*
+     /*
     
     if (-1 == (recv(clientInfo->sd, buffer, sizeof buffer, 0)))
     {
@@ -279,6 +279,8 @@ void *client_handler_function(void *parameters)
     
     
     */
+    
+    sleep(5);
     
     close(clientInfo->sd);
         
