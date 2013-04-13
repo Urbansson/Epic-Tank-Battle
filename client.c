@@ -163,8 +163,10 @@ int main(int argc, char *argv[])
     
     //sleep(5);
     
-    //close(tcpSd);
-    //close(udpSd);*/
+     
+     */
+    close(tcpSd);
+    close(udpSd);
     
     
     while (1)
