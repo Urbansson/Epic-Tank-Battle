@@ -9,7 +9,7 @@
 
 #include "internetFuncs.h"
 
-#define MAX_PLAYERS 3
+#define MAX_PLAYERS 6
 
 /*
 #define PORT 5000  // the port users will be connecting to
@@ -27,6 +27,13 @@ struct client
     int sd;                     //TCP-Socket descriptor
     char client_ip_addr[20];    //Clients ip-address
     int free;                   //Flag that indicates if the slot is free. 1 == taken 0 == free
+    int xLocation;
+    int yLocation;
+    
+    
+    
+    
+    
 };
 
 struct udp_info udpCliInfo[MAX_PLAYERS];
@@ -43,6 +50,8 @@ void server_debugger_print(struct client clientInfo, int place);
 void * debeugger_print_thread(void *parameters);
 
 int find_free_slot(struct client clientInfo[], int n);
+
+void *broadcast_location();
 
 
 int main(void)
@@ -79,9 +88,10 @@ int main(void)
     for (i = 0; i < MAX_PLAYERS; i++)
     {
         clear_client_struct(&clientInfo[i]);
+        udpCliInfo[1].udpsocksd = -1;
     }
     
-    pthread_create(&server_db_print,NULL,debeugger_print_thread,clientInfo);
+    //pthread_create(&server_db_print,NULL,debeugger_print_thread,clientInfo);
 
     while (1)
     {
@@ -226,7 +236,7 @@ void *hello_message_function( void *parameters )
     
     
     clear_client_struct(&clientInfo[clientInfo->mySlot]);
-    
+
     
     return NULL;
 }
@@ -235,52 +245,99 @@ void *hello_message_function( void *parameters )
 void *client_handler_function(void *parameters)
 {
     
-    char buffer[512] = "HEllo Mister!\n";
+    char buffer[64] = "HEllo Mister!\n";
     char port[10];
+    pthread_t broadcastLocation;
+
     
     struct client * clientInfo = (struct client*)parameters;
+    
+    clientInfo->xLocation = 0;
+    clientInfo->yLocation = 0;
     
     
     printf("Connection from: %s\n", clientInfo->client_ip_addr);
     
-    /*
-    
-    send(clientInfo->sd, "Hello World\n", sizeof("Hello World\n"), 0);
+    pthread_create( &broadcastLocation, NULL, broadcast_location, (clientInfo));
+
 
     
-    recv(clientInfo->sd, port, sizeof (port), 0);
-    
-    printf("Clients listning port is: %s\n", port);
-    
-    */
-    
-    //udp_init(clientInfo->client_ip_addr, port, &udpCliInfo[clientInfo->mySlot]);
-
-    udp_init(clientInfo->client_ip_addr, "6000", &udpCliInfo[clientInfo->mySlot]);
-    
-    
-    sendto(udpCliInfo[clientInfo->mySlot].udpsocksd, buffer, strlen(buffer)+1, 0, udpCliInfo[clientInfo->mySlot].p->ai_addr, udpCliInfo[clientInfo->mySlot].p->ai_addrlen);
-    
-     /*
-    
-    if (-1 == (recv(clientInfo->sd, buffer, sizeof buffer, 0)))
+    while ( 0 < recv(clientInfo->sd, buffer, sizeof(buffer), 0))
     {
-        printf("ERROR CONNECTION LOST!!\n");
-    } 
+     buffer[2] = '\n';
+        
+//        printf("Input from Client: %s\n", buffer);
+
+        switch(buffer[0])
+        {
+            case 'W':
+                clientInfo->yLocation -= 1;
+                break;
+            case 'S':
+                clientInfo->yLocation += 1;
+                break;
+            case 'A':
+                clientInfo->xLocation -= 1;
+                break;
+            case 'D':
+                clientInfo->xLocation += 1;
+                break;
+        }
+    }
+
     
-    sleep(10);
     
     
-    */
+    pthread_join (broadcastLocation, NULL);
+
     
-    sleep(5);
+    //sleep();
     
     close(clientInfo->sd);
-        
+    
     
     clear_client_struct(&clientInfo[clientInfo->mySlot]);
-
 }
+
+
+
+void *broadcast_location(void *parameters)
+{
+    int i;
+    char buffer[512] = "Hello\n";
+
+
+    struct client * clientInfo = (struct client*)parameters;
+
+    udp_init(clientInfo->client_ip_addr, "6000", &udpCliInfo[clientInfo->mySlot]);
+
+    sendto(udpCliInfo[clientInfo->mySlot].udpsocksd, buffer, strlen(buffer)+1, 0, udpCliInfo[clientInfo->mySlot].p->ai_addr, udpCliInfo[clientInfo->mySlot].p->ai_addrlen);
+
+    
+    
+    
+
+    while (1)
+    {
+        sprintf(buffer, "%d,%d", clientInfo->xLocation,clientInfo->yLocation);
+        
+        for (i = 0; i < MAX_PLAYERS; i++)
+        {
+            if( udpCliInfo[i].udpsocksd > 0 )
+            {
+                if(sendto(udpCliInfo[i].udpsocksd, buffer, strlen(buffer)+1, 0, udpCliInfo[i].p->ai_addr, udpCliInfo[i].p->ai_addrlen) == -1)
+                {
+                    perror("Send: \n");
+                    exit(1);
+                }
+            }
+        }
+        
+        usleep(500000);
+    }
+    
+}
+
 
 
 

@@ -20,10 +20,22 @@
 
 #include <unistd.h> /* close() */
 
+#include <pthread.h>
+
+
 #define LOCAL_PORT 6000
 #define MAX_MSG 512
 
-int client_udp_init(/*char portc[]*/)
+struct udpData
+{
+    int udpSd;
+    struct sockaddr_in servAddr;
+    int xCord;
+    int yCord;
+};
+
+
+int client_udp_init()
 {
     struct sockaddr_in cliAddr;
     int udpSd, bindCheck;
@@ -161,20 +173,64 @@ int init()
     return 1;
 }
 
+void * recive_data( void *parameters )
+{
+    char msg[MAX_MSG];
+    socklen_t servLen;
+    
+    printf("HEJSAN FRÅN THREAD!\n");
+    
+    struct udpData * udpInfo = (struct udpData*)parameters;
+
+    while (1)
+    {
+        
+
+    
+    memset(msg, 0, MAX_MSG);    
+    servLen = sizeof(udpInfo->servAddr);
+    
+    recvfrom(udpInfo->udpSd, msg, sizeof(MAX_MSG), 0, (struct sockaddr *) &udpInfo->servAddr, &servLen);
+    
+    printf("Message from server: %s\n", msg);
+    }
+    /*
+    
+    while (1)
+    {
+        memset(msg, 0, MAX_MSG);
+        
+        servLen = sizeof(udpInfo->servAddr);
+        recvfrom(udpInfo->udpSd, msg, MAX_MSG, 0, (struct sockaddr *) &udpInfo->servAddr, &servLen);
+        
+        printf("Message from server: %s", msg);
+        
+    }
+
+*/
+
+}
+
+
+
 
 int main(int argc, char *argv[])
 {
-    int udpSd;
+    //int udpSd;
     
-    struct sockaddr_in servAddr;
+    struct udpData udpInfo;
+    
+    //struct sockaddr_in servAddr;
     socklen_t servLen;
     char msg[MAX_MSG];
 
     int tcpSd;
     
+    pthread_t reciveFromServer;
     
-    udpSd = client_udp_init(argv[3]);
-    if (udpSd == -1)
+    
+    udpInfo.udpSd = client_udp_init();
+    if (udpInfo.udpSd == -1)
     {
         printf("udp init failed!\n");
         return;
@@ -182,40 +238,42 @@ int main(int argc, char *argv[])
     
     
     tcpSd = client_tcp_init(argv[1], argv[2]);
-    if (udpSd == -1)
+    if (tcpSd == -1)
     {
         printf("tcp init failed!\n");
         return;
     }
     
+    pthread_create( &reciveFromServer, NULL, recive_data, &(udpInfo));
+
     
-        int quit=0;
+    int quit=0;
 
-        init();
+    init();
 
-        SDL_Event event;
-        while (quit==0)
-        {   
-             handle_keyboard(&event,&quit, tcpSd);
-        }
+    SDL_Event event;
+    while (quit==0)
+    {
+        handle_keyboard(&event,&quit, tcpSd);
+    }
+    
     /*
     
     while (1)
     {
 
         memset(msg, 0, MAX_MSG);
-
     
-        servLen = sizeof(servAddr);
-        recvfrom(udpSd, msg, MAX_MSG, 0, (struct sockaddr *) &servAddr, &servLen);
+        servLen = sizeof(udpInfo.servAddr);
+        recvfrom(udpInfo.udpSd, msg, MAX_MSG, 0, (struct sockaddr *) &udpInfo.servAddr, &servLen);
     
         printf("Message from server: %s", msg);
     
    }
-    */
     
+    */
     close(tcpSd);
-    close(udpSd);
+    close(udpInfo.udpSd);
     
     
     return 0;
