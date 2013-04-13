@@ -34,20 +34,13 @@ struct udp_info udpCliInfo[MAX_PLAYERS];
 
 void clear_client_struct(struct client *clientInfo);
 
-
 void *hello_message_function( void *parameters );
-
 
 void *client_handler_function(void *parameters);
 
-
 void server_debugger_print(struct client clientInfo, int place);
 
-
-
 void * debeugger_print_thread(void *parameters);
-
-
 
 int find_free_slot(struct client clientInfo[], int n);
 

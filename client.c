@@ -107,9 +107,6 @@ int client_tcp_init(char *serverIp, char *serverPort)
 
 
 
-
-
-
 int main(int argc, char *argv[])
 {
     int udpSd;
