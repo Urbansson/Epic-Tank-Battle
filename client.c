@@ -187,32 +187,6 @@ int main(int argc, char *argv[])
     printf("waiting for data on port UDP %u\n", LOCAL_PORT);
 
     
-    
-    /*
-    recv(tcpSd, msg, sizeof(msg), 0);
-    
-    printf("message from tcp: %s", msg);
-    
-    
-    strcpy(msg, argv[3]);
-    
-    send(tcpSd, msg, sizeof(msg), 0);
-
-    
-    recv(tcpSd, msg, sizeof(msg), 0);
-    
-    
-    printf("message from tcp is: %s\n", msg);
-    
-    
-    
-    //sleep(5);
-    
-     
-     */
-
-    
-    
     //while (1)
     //{
 
