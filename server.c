@@ -250,6 +250,8 @@ void *client_handler_function(void *parameters)
     
     printf("Connection from: %s\n", clientInfo->client_ip_addr);
     
+    /*
+    
     send(clientInfo->sd, "Hello World\n", sizeof("Hello World\n"), 0);
 
     
@@ -257,7 +259,7 @@ void *client_handler_function(void *parameters)
     
     printf("Clients listning port is: %s\n", port);
     
-    
+    */
     
     //udp_init(clientInfo->client_ip_addr, port, &udpCliInfo[clientInfo->mySlot]);
 
@@ -266,7 +268,7 @@ void *client_handler_function(void *parameters)
     
     sendto(udpCliInfo[clientInfo->mySlot].udpsocksd, buffer, strlen(buffer)+1, 0, udpCliInfo[clientInfo->mySlot].p->ai_addr, udpCliInfo[clientInfo->mySlot].p->ai_addrlen);
     
-     
+     *//*
     
     if (-1 == (recv(clientInfo->sd, buffer, sizeof buffer, 0)))
     {
@@ -274,6 +276,9 @@ void *client_handler_function(void *parameters)
     } 
     
     sleep(10);
+    
+    
+    */
     
     close(clientInfo->sd);
         

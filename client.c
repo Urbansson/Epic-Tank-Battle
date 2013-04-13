@@ -143,6 +143,7 @@ int main(int argc, char *argv[])
 
     
     
+    /*
     recv(tcpSd, msg, sizeof(msg), 0);
     
     printf("message from tcp: %s", msg);
@@ -163,8 +164,7 @@ int main(int argc, char *argv[])
     //sleep(5);
     
     //close(tcpSd);
-    //close(udpSd);
-
+    //close(udpSd);*/
     
     
     while (1)
