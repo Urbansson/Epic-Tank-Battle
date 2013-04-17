@@ -27,17 +27,21 @@ struct client
     int sd;                     //TCP-Socket descriptor
     char client_ip_addr[20];    //Clients ip-address
     int free;                   //Flag that indicates if the slot is free. 1 == taken 0 == free
-    
     int xLocation;
     int yLocation;
-    int xVelocity;
-    int yVelocity;
+    
+    
+    
+    
     
 };
 
 struct udp_info udpCliInfo[MAX_PLAYERS];
 
+
 void clear_client_struct(struct client *clientInfo);
+
+void *hello_message_function( void *parameters );
 
 void *client_handler_function(void *parameters);
 
@@ -47,51 +51,53 @@ void * debeugger_print_thread(void *parameters);
 
 int find_free_slot(struct client clientInfo[], int n);
 
-void *movement_calculations(void *parameters);
-
-
 void *broadcast_location();
 
 
 int main(void)
 {
     
-    int sd, newSd;              //Socket descriptors sd is the one main listens on newSd is the one clients gets.
-    struct sockaddr_in cliAddr; //Information about the client
-    socklen_t cliLen;           //
-
-    pthread_t server_db_print;  //Debug print thread information
+    int sd, newSd;
+    struct sockaddr_in cliAddr;
+    socklen_t cliLen;
     
-    struct client clientInfo[MAX_PLAYERS];  // Where all necessary information about the client is stored
     
-    int clientSlot;             // Stores in slot the new connection is going to get 
+    pthread_t server_db_print;
+    //struct udp_info udpCliInfo;
+    
+    
+    struct client clientInfo[MAX_PLAYERS];
+    
+    int clientSlot;
     
     int i;
     
-    //char buffer[128];
+    char s[40];
+    char buffer[128] = "Hello World!\n";
     
-    
-    // Init tcp
     sd = tcp_init();
     if (sd == -1)
     {
-        return ERROR;           // Exits if error
+        return ERROR;
     }
 
-    //Cleares the Clients structs and makes it ready for use.
+    
+    printf("Waiting for connection... \n");
+    
+    
     for (i = 0; i < MAX_PLAYERS; i++)
     {
         clear_client_struct(&clientInfo[i]);
-//        udpCliInfo[1].udpsocksd = -1;
+        udpCliInfo[1].udpsocksd = -1;
     }
     
-    
-    //Starts the debug print thread
-    pthread_create(&server_db_print,NULL,debeugger_print_thread,clientInfo);
+    //pthread_create(&server_db_print,NULL,debeugger_print_thread,clientInfo);
 
     while (1)
     {
     
+        
+        
         cliLen = sizeof(cliAddr);
         newSd = accept(sd, (struct sockaddr *) &cliAddr, &cliLen);
         
@@ -101,8 +107,7 @@ int main(void)
             continue;
         }
         
-        //Finds the first free slot
-        clientSlot = find_free_slot(clientInfo, MAX_PLAYERS);
+        clientSlot = find_free_slot(clientInfo, MAX_PLAYERS);   //Finds the first free slot
         
         if(clientSlot==-1)
         {
@@ -115,19 +120,29 @@ int main(void)
         clientInfo[clientSlot].sd = newSd;          // Gives the slot the socket descriptor
         clientInfo[clientSlot].mySlot = clientSlot; // Gives the Slot number 
         
-        // Gets the clients ip address and stores it
-        inet_ntop(cliAddr.sin_family, &cliAddr.sin_addr, clientInfo[clientSlot].client_ip_addr, sizeof (clientInfo[clientSlot].client_ip_addr));
         
-            
-        //Main thread for the connected client, Main programm will serv new connections
+        inet_ntop(cliAddr.sin_family, &cliAddr.sin_addr, clientInfo[clientSlot].client_ip_addr, sizeof (clientInfo[clientSlot].client_ip_addr));
+        // Gets the clients ip address and stores it
+        
+        //pthread_create( &clientInfo[clientSlot].threadId, NULL, hello_message_function, &(clientInfo[clientSlot]));
+        
+        
         pthread_create( &clientInfo[clientSlot].threadId, NULL, client_handler_function, &(clientInfo[clientSlot]));
 
+        //Main thread for the connected client, Main programm will serv new connections
+
+        
+        
+         /*
+        udp_init(s, "6000", &udpCliInfo);
+        
+        sendto(udpCliInfo.udpsocksd, buffer, strlen(buffer)+1, 0, udpCliInfo.p->ai_addr, udpCliInfo.p->ai_addrlen);
+                
+         */
         
     }
 
-
-    // Will mostlikly never happen
-    close(sd);
+    //close(sd);
 
     
     return 0;
@@ -148,9 +163,10 @@ void clear_client_struct(struct client *clientInfo)
 {
     clientInfo->mySlot = -1;                            //My Slot on the server
     clientInfo->threadId = 0;                           //Thread Id
-    clientInfo->sd =  0;                                //TCP-Socket descriptor
+    clientInfo->sd = 0;                                 //TCP-Socket descriptor
     strcpy(clientInfo->client_ip_addr, "0.0.0.0");      //Clients ip-address
     clientInfo->free = 0;                               //Flag that indicates if the slot is free. 1 == taken 0 == free
+
 }
 
 void server_debugger_print(struct client clientInfo, int place)
@@ -164,6 +180,8 @@ void server_debugger_print(struct client clientInfo, int place)
         printf("Server free flag: Free\n");
     else
         printf("Server free flag: Taken\n");
+    
+    //printf("Server Free Flag: %d\n", clientInfo.free);
     
     printf("\n");
     printf("\n");
@@ -185,126 +203,126 @@ void * debeugger_print_thread(void *parameters)
         {
             server_debugger_print(clientInfo[i], i);
         }
-        sleep(2);//refresh timer
+        sleep(2);
         printf("///////////////////////////////////////////////////////////\n");
+        //system("clear");
     }
 }
 
 
 
-void *client_handler_function(void *parameters)
+void *hello_message_function( void *parameters )
 {
     
-    char buffer[64] = "\0";
-    pthread_t broadcastLocation;
-    pthread_t calculations;
+    char buffer[100];
     
     struct client * clientInfo = (struct client*)parameters;
     
+    send(clientInfo->sd, "Hello World\n", sizeof("Hello World\n"), 0);
     
-    //Set start postion for clitent
+    
+    recv(clientInfo->sd, buffer, sizeof (buffer), 0);
+    
+    
+    
+    send(clientInfo->sd, buffer, sizeof(buffer), 0);
+
+    
+    
+    
+    sleep(5);
+    
+    close(clientInfo->sd);
+    
+    
+    clear_client_struct(&clientInfo[clientInfo->mySlot]);
+
+    
+    return NULL;
+}
+
+
+void *client_handler_function(void *parameters)
+{
+    
+    char buffer[64] = "HEllo Mister!\n";
+    char port[10];
+    pthread_t broadcastLocation;
+
+    
+    struct client * clientInfo = (struct client*)parameters;
+    
     clientInfo->xLocation = 0;
     clientInfo->yLocation = 0;
     
     
     printf("Connection from: %s\n", clientInfo->client_ip_addr);
     
-    //Thread that sends the location of the clients position to all connected clients
     pthread_create( &broadcastLocation, NULL, broadcast_location, (clientInfo));
-    pthread_create( &calculations, NULL, movement_calculations, (clientInfo));
 
 
-    //Recives the clients input and makes the appropriate changes
+    
     while ( 0 < recv(clientInfo->sd, buffer, sizeof(buffer), 0))
     {
      buffer[2] = '\n';
-                
+        
+//        printf("Input from Client: %s\n", buffer);
+
         switch(buffer[0])
         {
             case 'W':
-                clientInfo->yVelocity -= 1;
+                clientInfo->yLocation -= 1;
                 break;
             case 'S':
-                clientInfo->yVelocity += 1;
+                clientInfo->yLocation += 1;
                 break;
             case 'A':
-                clientInfo->xVelocity -= 1;
+                clientInfo->xLocation -= 1;
                 break;
             case 'D':
-                clientInfo->xVelocity += 1;
-                break;
-                
-            case 'w':
-                clientInfo->yVelocity += 1;
-                break;
-            case 's':
-                clientInfo->yVelocity -= 1;
-                break;
-            case 'a':
-                clientInfo->xVelocity += 1;
-                break;
-            case 'd':
-                clientInfo->xVelocity -= 1;
+                clientInfo->xLocation += 1;
                 break;
         }
     }
 
     
     
-    //If the clients quits or connection is lost cancel the broadcast thread
-    pthread_cancel(broadcastLocation);
-    pthread_cancel(calculations);
+    
+    pthread_join (broadcastLocation, NULL);
 
-
-    //Close sd
+    
+    //sleep();
+    
     close(clientInfo->sd);
     
-    //Clears upd socket so server dont spend time sending to nothing
-    udpCliInfo[clientInfo->mySlot].udpsocksd = -1;
-    //Clear clint information strcut so a new connection can take it
+    
     clear_client_struct(&clientInfo[clientInfo->mySlot]);
 }
 
-void *movement_calculations(void *parameters)
-{
-    
-    struct client * clientInfo = (struct client*)parameters;
-
-    for (;;)
-    {
-        clientInfo->xLocation += clientInfo->xVelocity;
-        clientInfo->yLocation += clientInfo->yVelocity;
-        usleep(10000);
-    }
-
-}
 
 
 void *broadcast_location(void *parameters)
 {
     int i;
-    char buffer[128] = "\0";
+    char buffer[512] = "Hello\n";
 
 
     struct client * clientInfo = (struct client*)parameters;
 
     udp_init(clientInfo->client_ip_addr, "6000", &udpCliInfo[clientInfo->mySlot]);
 
-    //sendto(udpCliInfo[clientInfo->mySlot].udpsocksd, buffer, strlen(buffer)+1, 0, udpCliInfo[clientInfo->mySlot].p->ai_addr, udpCliInfo[clientInfo->mySlot].p->ai_addrlen);
+    sendto(udpCliInfo[clientInfo->mySlot].udpsocksd, buffer, strlen(buffer)+1, 0, udpCliInfo[clientInfo->mySlot].p->ai_addr, udpCliInfo[clientInfo->mySlot].p->ai_addrlen);
 
+    
+    
+    
 
     while (1)
     {
+        sprintf(buffer, "%d,%d", clientInfo->xLocation,clientInfo->yLocation);
         
-        //Formats the information for sending.
-        sprintf(buffer, "%d,%d,%d", clientInfo->xLocation,clientInfo->yLocation, clientInfo->mySlot);
-        
-        //printf("Sending: %s\n", buffer);
-        
-        //Sends to all Players
         for (i = 0; i < MAX_PLAYERS; i++)
         {
-            //Skips slot if no connection
             if( udpCliInfo[i].udpsocksd > 0 )
             {
                 if(sendto(udpCliInfo[i].udpsocksd, buffer, strlen(buffer)+1, 0, udpCliInfo[i].p->ai_addr, udpCliInfo[i].p->ai_addrlen) == -1)
@@ -315,8 +333,7 @@ void *broadcast_location(void *parameters)
             }
         }
         
-        //waits to not overload client and the network
-        usleep(10000);
+        usleep(500000);
     }
     
 }
