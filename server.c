@@ -4,21 +4,11 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <netdb.h>
-
 #include <pthread.h>
-
 #include "internetFuncs.h"
 
 #define MAX_PLAYERS 6
 
-/*
-#define PORT 5000  // the port users will be connecting to
-#define BACKLOG 10     // how many pending connections queue will hold
-
-#define ERROR -1
-#define SUCCESS 0
-
-*/
 
 struct client
 {
@@ -114,7 +104,7 @@ int main(void)
         clientInfo[clientSlot].free = 1;            // Sets the client slot so it is taken
         clientInfo[clientSlot].sd = newSd;          // Gives the slot the socket descriptor
         clientInfo[clientSlot].mySlot = clientSlot; // Gives the Slot number 
-        
+                
         // Gets the clients ip address and stores it
         inet_ntop(cliAddr.sin_family, &cliAddr.sin_addr, clientInfo[clientSlot].client_ip_addr, sizeof (clientInfo[clientSlot].client_ip_addr));
         
@@ -195,12 +185,11 @@ void * debeugger_print_thread(void *parameters)
 void *client_handler_function(void *parameters)
 {
     
-    char buffer[64] = "\0";
+    char buffer[64];
     pthread_t broadcastLocation;
     pthread_t calculations;
     
     struct client * clientInfo = (struct client*)parameters;
-    
     
     //Set start postion for clitent
     clientInfo->xLocation = 0;
@@ -209,8 +198,15 @@ void *client_handler_function(void *parameters)
     
     printf("Connection from: %s\n", clientInfo->client_ip_addr);
     
+    /*
+    sprintf(buffer, "%d", clientInfo->mySlot);
+    send(clientInfo->sd, buffer, sizeof(buffer), 0);
+    printf("Sending: %s\n", buffer);
+    */
+    
     //Thread that sends the location of the clients position to all connected clients
     pthread_create( &broadcastLocation, NULL, broadcast_location, (clientInfo));
+    //Thread that calculates the clients movement
     pthread_create( &calculations, NULL, movement_calculations, (clientInfo));
 
 
@@ -222,16 +218,16 @@ void *client_handler_function(void *parameters)
         switch(buffer[0])
         {
             case 'W':
-                clientInfo->yVelocity -= 1;
+                clientInfo->yVelocity = -1;
                 break;
             case 'S':
-                clientInfo->yVelocity += 1;
+                clientInfo->yVelocity = +1;
                 break;
             case 'A':
-                clientInfo->xVelocity -= 1;
+                clientInfo->xVelocity = -1;
                 break;
             case 'D':
-                clientInfo->xVelocity += 1;
+                clientInfo->xVelocity = +1;
                 break;
                 
             case 'w':
@@ -263,6 +259,8 @@ void *client_handler_function(void *parameters)
     udpCliInfo[clientInfo->mySlot].udpsocksd = -1;
     //Clear clint information strcut so a new connection can take it
     clear_client_struct(&clientInfo[clientInfo->mySlot]);
+    
+    return NULL;
 }
 
 void *movement_calculations(void *parameters)
@@ -272,9 +270,43 @@ void *movement_calculations(void *parameters)
 
     for (;;)
     {
+        
+        if (clientInfo->xVelocity > 1)
+        {
+            clientInfo->xVelocity = 1;
+        }
+        if (clientInfo->xVelocity < -1)
+        {
+            clientInfo->xVelocity = -1;
+        }
+        if (clientInfo->yVelocity > 1)
+        {
+            clientInfo->yVelocity = 1;
+        }
+        if (clientInfo->yVelocity < -1)
+        {
+            clientInfo->yVelocity = -1;
+        }
+        
+        
+        
+        //Limits the client to the screen
         clientInfo->xLocation += clientInfo->xVelocity;
+        
+        if (clientInfo->xLocation < 0 || clientInfo->xLocation+ 30 > 800 )
+        {
+            clientInfo->xLocation -= clientInfo->xVelocity;
+        }
+        
         clientInfo->yLocation += clientInfo->yVelocity;
-        usleep(10000);
+        
+        if (clientInfo->yLocation < 0 || clientInfo->yLocation + 30 > 600 )
+        {
+            clientInfo->yLocation -= clientInfo->yVelocity;
+        }
+        
+        //around 200 calcs every sec
+        usleep(5000);
     }
 
 }
@@ -290,14 +322,13 @@ void *broadcast_location(void *parameters)
 
     udp_init(clientInfo->client_ip_addr, "6000", &udpCliInfo[clientInfo->mySlot]);
 
-    //sendto(udpCliInfo[clientInfo->mySlot].udpsocksd, buffer, strlen(buffer)+1, 0, udpCliInfo[clientInfo->mySlot].p->ai_addr, udpCliInfo[clientInfo->mySlot].p->ai_addrlen);
-
-
     while (1)
     {
         
         //Formats the information for sending.
         sprintf(buffer, "%d,%d,%d", clientInfo->xLocation,clientInfo->yLocation, clientInfo->mySlot);
+        
+        //sprintf(buffer, "200,300,0");
         
         //printf("Sending: %s\n", buffer);
         
@@ -316,7 +347,7 @@ void *broadcast_location(void *parameters)
         }
         
         //waits to not overload client and the network
-        usleep(10000);
+        usleep(30303);
     }
     
 }
