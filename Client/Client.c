@@ -16,25 +16,29 @@
 #define FPS 60
 
 
+struct udpData
+{
+    int udpSd;
+    char serverIp[16];
+} UdpInfo;
+
+void * recive_udp_data(void * parameters);
+
+
 //void * calculate_movement(void * parameters);
 
 int main(int argc, char *argv[])
 {
-    pthread_t movCalc;
+    pthread_t reciveUdpData;
     int run = 1;
     struct playerInfo player[6];
     struct timerInfo fps;
     int udpSd, tcpSd;
 
     SDL_Event event;
-
-    char buffer[32];
-    char temp[5];
-    int pos, devider = 0;
     
-    struct stcMoveInfo moveInfo;
-    
-    udpSd = udp_init();
+    strcpy(UdpInfo.serverIp, argv[1]);
+    UdpInfo.udpSd = udp_init();
     if (udpSd == -1)
     {
         printf("udp init failed!\n");
@@ -58,6 +62,8 @@ int main(int argc, char *argv[])
     //player.xVel = 0;
     
     //pthread_create( &movCalc, NULL, calculate_movement, &(player));
+    pthread_create( &reciveUdpData, NULL, recive_udp_data, &(player));
+
 
     while (run)
     {
@@ -74,41 +80,6 @@ int main(int argc, char *argv[])
              handel_input(&player[0], &event, tcpSd );
             
          }
-
-        
-        recvfrom(udpSd, buffer, sizeof(buffer), 0, argv[1], sizeof(argv[1]));
-        
-        for (pos = 0; pos < 9; pos++)
-        {
-            if (buffer[pos] == ',')
-            {
-                if (devider == 0)
-                {
-                    strncpy(temp, buffer, pos);
-                    temp[pos] = '\0';
-                    moveInfo.x = atoi(temp);
-                    devider = pos;
-                }
-                else
-                {
-                    strncpy(temp, &buffer[devider+1], pos);
-                    temp[pos] = '\0';
-                    moveInfo.y = atoi(temp);
-                    
-                    strcpy(temp, &buffer[pos+1]);
-                    temp[1] = '\0';
-                    moveInfo.player = atoi(temp);
-                    devider = 0;
-                    break;
-                }
-            }
-        }
-        
-        
-        player[moveInfo.player].xCord = moveInfo.x;
-        player[moveInfo.player].yCord = moveInfo.y;
-        
-        printf("recived from server: %s\n", buffer);
         
         //Clears the screen
         glClear( GL_COLOR_BUFFER_BIT );
@@ -137,10 +108,61 @@ int main(int argc, char *argv[])
             
     }
 
-    pthread_cancel(movCalc);
+    pthread_cancel(reciveUdpData);
     return 0;
 }
 
+void * recive_udp_data(void * parameters)
+{
+    
+    char buffer[32];
+    char temp[5];
+    int pos, devider = 0;
+    struct stcMoveInfo moveInfo;
+    
+    struct playerInfo * player = (struct playerInfo*) parameters;
+    
+    
+    while (1)
+    {
+        recvfrom(UdpInfo.udpSd, buffer, sizeof(buffer), 0, UdpInfo.serverIp, sizeof(UdpInfo.serverIp));
+    
+        printf("recived from server: %s \n", buffer);
+    
+    
+        for (pos = 0; pos < 9; pos++)
+        {
+            if (buffer[pos] == ',')
+            {
+                if (devider == 0)
+                {
+                    strncpy(temp, buffer, pos);
+                    temp[pos] = '\0';
+                    moveInfo.x = atoi(temp);
+                    devider = pos;
+                }
+                else
+                {
+                    strncpy(temp, &buffer[devider+1], pos);
+                    temp[pos] = '\0';
+                    moveInfo.y = atoi(temp);
+                
+                    strcpy(temp, &buffer[pos+1]);
+                    temp[1] = '\0';
+                    moveInfo.player = atoi(temp);
+                    devider = 0;
+                    break;
+                }
+            }
+        }
+    
+        player[moveInfo.player].slot = moveInfo.player;
+        player[moveInfo.player].xCord = moveInfo.x;
+        player[moveInfo.player].yCord = moveInfo.y;
+        
+    }
+    
+}
 
 //This will be done on the server
 

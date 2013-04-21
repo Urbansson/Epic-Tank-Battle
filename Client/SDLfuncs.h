@@ -12,6 +12,7 @@
 
 struct playerInfo
 {
+    int slot;
     int xCord, yCord;
     int xVel, yVel;
 };
