@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
     struct playerInfo player[6];
     struct timerInfo fps;
     int udpSd, tcpSd;
+    struct cameraInfo camera;
 
     SDL_Event event;
     
@@ -61,6 +62,10 @@ int main(int argc, char *argv[])
     //player[].yVel = 0;
     //player.xVel = 0;
     
+    camera.xCord = 0;
+    camera.yCord = 0;
+
+    
     //pthread_create( &movCalc, NULL, calculate_movement, &(player));
     pthread_create( &reciveUdpData, NULL, recive_udp_data, &(player));
 
@@ -81,15 +86,43 @@ int main(int argc, char *argv[])
             
          }
         
+        // PRob best in sep thread 
+        if (player[0].mouseX <= 50)
+        {
+            camera.xCord += 3;
+        }
+        if (player[0].mouseX >= 750)
+        {
+            camera.xCord -= 3;
+        }
+        if (player[0].mouseY <= 50)
+        {
+            camera.yCord += 3;
+        }
+        if (player[0].mouseY >= 550)
+        {
+            camera.yCord -= 3;
+        }
+        
+        
+        
+        //In its own thread.
+        
         //Clears the screen
         glClear( GL_COLOR_BUFFER_BIT );
         
-        
-        //draws box on screen
-        draw(&player[0]);
-        draw(&player[1]);
+        map(&camera);
 
-        
+        //draws box on screen
+        draw(&player[0], &camera);
+        draw(&player[1], &camera);
+        draw(&player[2], &camera);
+        draw(&player[3], &camera);
+        draw(&player[4], &camera);
+        draw(&player[5], &camera);
+        //If once connected player is never removed
+
+
         
         //Waits until everything is drawn on the screen
         glFlush();
@@ -127,7 +160,7 @@ void * recive_udp_data(void * parameters)
     {
         recvfrom(UdpInfo.udpSd, buffer, sizeof(buffer), 0, UdpInfo.serverIp, sizeof(UdpInfo.serverIp));
     
-        printf("recived from server: %s \n", buffer);
+        //printf("recived from server: %s \n", buffer);
     
     
         for (pos = 0; pos < 9; pos++)

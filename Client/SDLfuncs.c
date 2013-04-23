@@ -69,11 +69,15 @@ int initGL()
     
 }
 
-void draw(struct playerInfo * player)
+void draw(struct playerInfo * player, struct cameraInfo * camera)
 {
-    glTranslatef( player->xCord, player->yCord, 0);
+    
+    glTranslatef( player->xCord+ camera->xCord, player->yCord+ camera->yCord, 0);
     
     glBegin(GL_QUADS);
+    
+    glColor3f(1,0,0);
+
     
     glVertex2f( 0,      0      );
     glVertex2f( HITBOX, 0      );
@@ -86,8 +90,31 @@ void draw(struct playerInfo * player)
     glLoadIdentity();
 }
 
+void map(struct cameraInfo * camera)
+{
+
+    glTranslatef( camera->xCord, camera->yCord, 0);
+    
+    glBegin(GL_QUADS);
+
+    glColor3f(0,1,0);
+    
+    glVertex2f( 0,         0      );
+    glVertex2f( MAP_WIDTH, 0      );
+    glVertex2f( MAP_WIDTH, MAP_HIGHT );
+    glVertex2f( 0,         MAP_HIGHT );
+    
+    glEnd();
+
+    //resets
+    glLoadIdentity();
+
+}
+
 void handel_input(struct playerInfo * player, SDL_Event * event, int tcpSd )
 {
+    
+    SDL_GetMouseState(&player->mouseX, &player->mouseY);
     
     //If key is pressed down
     if( event->type == SDL_KEYDOWN )
@@ -110,20 +137,6 @@ void handel_input(struct playerInfo * player, SDL_Event * event, int tcpSd )
                 send(tcpSd, "D", sizeof("D"), 0);
                 //printf("D \n");
                 break;
-                /*
-            case SDLK_w:
-                player->yVel -= 1;
-                break;
-            case SDLK_s:
-                player->yVel += 1;
-                break;
-            case SDLK_a:
-                player->xVel -= 1;
-                break;
-            case SDLK_d:
-                player->xVel += 1;
-                break;
-                 */
         }
     }
     //If a key was released
@@ -148,20 +161,6 @@ void handel_input(struct playerInfo * player, SDL_Event * event, int tcpSd )
                 send(tcpSd, "d", sizeof("D"), 0);
                 //printf("D \n");
                 break;
-                /*
-            case SDLK_w:
-                player->yVel += 1;
-                break;
-            case SDLK_s:
-                player->yVel -= 1;
-                break;
-            case SDLK_a:
-                player->xVel += 1;
-                break;
-            case SDLK_d:
-                player->xVel -= 1;
-                break;
-                 */
         }
     }
 }
