@@ -214,7 +214,7 @@ void *client_handler_function(void *parameters)
     while ( 0 < recv(clientInfo->sd, buffer, sizeof(buffer), 0))
     {
      buffer[2] = '\n';
-                
+        
         switch(buffer[0])
         {
             case 'W':
@@ -245,7 +245,6 @@ void *client_handler_function(void *parameters)
         }
     }
 
-    
     
     //If the clients quits or connection is lost cancel the broadcast thread
     pthread_cancel(broadcastLocation);
@@ -293,14 +292,14 @@ void *movement_calculations(void *parameters)
         //Limits the client to the screen
         clientInfo->xLocation += clientInfo->xVelocity;
         
-        if (clientInfo->xLocation < 0 || clientInfo->xLocation+ 30 > 800 )
+        if (clientInfo->xLocation < 0 || clientInfo->xLocation+ 30 > 2400 )
         {
             clientInfo->xLocation -= clientInfo->xVelocity;
         }
         
         clientInfo->yLocation += clientInfo->yVelocity;
         
-        if (clientInfo->yLocation < 0 || clientInfo->yLocation + 30 > 600 )
+        if (clientInfo->yLocation < 0 || clientInfo->yLocation + 30 > 1800 )
         {
             clientInfo->yLocation -= clientInfo->yVelocity;
         }

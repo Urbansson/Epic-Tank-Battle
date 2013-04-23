@@ -86,25 +86,28 @@ int main(int argc, char *argv[])
             
          }
         
-        // PRob best in sep thread 
-        if (player[0].mouseX <= 50)
+        // PRob best in sep thread
+        if (player[0].mouseX <= 50 && camera.xCord <= 200)
         {
             camera.xCord += 3;
         }
-        if (player[0].mouseX >= 750)
+        if (player[0].mouseX >= 750 && camera.xCord >= -1800)
         {
             camera.xCord -= 3;
         }
-        if (player[0].mouseY <= 50)
+        
+        
+        if (player[0].mouseY <= 50  && camera.yCord <= 200)
         {
             camera.yCord += 3;
         }
-        if (player[0].mouseY >= 550)
+        if (player[0].mouseY >= 550 && camera.yCord >= -1400)
         {
             camera.yCord -= 3;
         }
         
         
+        printf("CAm x: %d Y: %d\n", camera.xCord, camera.yCord);
         
         //In its own thread.
         
@@ -192,7 +195,6 @@ void * recive_udp_data(void * parameters)
         player[moveInfo.player].slot = moveInfo.player;
         player[moveInfo.player].xCord = moveInfo.x;
         player[moveInfo.player].yCord = moveInfo.y;
-        
     }
     
 }
