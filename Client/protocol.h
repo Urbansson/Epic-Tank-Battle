@@ -12,8 +12,15 @@
 // Server to Client Move Info
 struct stcMoveInfo
 {
-    int x, y;
-    int player;
+    int x, y;       //Where the player is
+    int player;     //Who the players is
+};
+
+struct ctsCommands
+{
+    int mouseX, mouseY; //Where the mouse is at the screen
+    char mouseInput;    //If the mouse is pressed or not
+    char keyboardInput; //What key is pressed
 };
 
 #endif

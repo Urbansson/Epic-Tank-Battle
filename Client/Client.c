@@ -89,25 +89,25 @@ int main(int argc, char *argv[])
         // PRob best in sep thread
         if (player[0].mouseX <= 50 && camera.xCord <= 200)
         {
-            camera.xCord += 3;
+            camera.xCord += 6;
         }
         if (player[0].mouseX >= 750 && camera.xCord >= -1800)
         {
-            camera.xCord -= 3;
+            camera.xCord -= 6;
         }
         
         
         if (player[0].mouseY <= 50  && camera.yCord <= 200)
         {
-            camera.yCord += 3;
+            camera.yCord += 6;
         }
         if (player[0].mouseY >= 550 && camera.yCord >= -1400)
         {
-            camera.yCord -= 3;
+            camera.yCord -= 6;
         }
         
         
-        printf("CAm x: %d Y: %d\n", camera.xCord, camera.yCord);
+        //printf("CAm x: %d Y: %d\n", camera.xCord, camera.yCord);
         
         //In its own thread.
         

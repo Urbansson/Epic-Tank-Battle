@@ -9,8 +9,8 @@
 #include <netdb.h>
 
 #include <string.h> //memset 
-
 #include "clientinternetfuncs.h"
+
 
 
 int udp_init()
@@ -84,6 +84,19 @@ int tcp_init(char *serverIp, char *serverPort)
     
     
     return tcpSd;
+}
+
+
+void format_send_ctsCommand(struct ctsCommands *commands, int tcpSd)
+{
+    char buffer[64];
+    
+    //Formats to send
+    sprintf(buffer, "%d, %d, %c, %c",commands->mouseX,commands->mouseY,commands->mouseInput,commands->keyboardInput);
+    
+    printf("SENDING: %s\n", buffer);
+    //Sends the commands to the server
+    send(tcpSd, buffer, sizeof(buffer), 0);
 }
 
 

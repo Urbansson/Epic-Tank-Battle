@@ -4,7 +4,14 @@
 #include "SDL/SDL.h"
 #include "SDL/SDL_opengl.h"
 #include <stdio.h>
+
+
 #include "SDLfuncs.h"
+#include "protocol.h" 
+#include "clientinternetfuncs.h"
+
+
+
 
 int init()
 {
@@ -113,31 +120,66 @@ void map(struct cameraInfo * camera)
 
 void handel_input(struct playerInfo * player, SDL_Event * event, int tcpSd )
 {
+    struct ctsCommands commands;
+    char buffer[20];
     
-    SDL_GetMouseState(&player->mouseX, &player->mouseY);
+    
+    SDL_GetMouseState(&commands.mouseX, &commands.mouseY);
+    player->mouseX = commands.mouseX;
+    player->mouseY = commands.mouseY;
+    
+    
+    //SDL_GetMouseState(&player->mouseX, &player->mouseY);
+    
+    if( event->type == SDL_MOUSEBUTTONDOWN )
+    {
+        switch(event->button.button)
+        {
+            case SDL_BUTTON_LEFT:
+                commands.mouseInput = 'L';
+                //printf("LMB \n");
+                break;
+            case SDL_BUTTON_RIGHT:
+                commands.mouseInput = 'R';
+                //printf("RMB \n");
+                break;
+            default:
+                commands.mouseInput = 'N';
+        }
+
+        format_send_ctsCommand(&commands, tcpSd);
+    }
     
     //If key is pressed down
-    if( event->type == SDL_KEYDOWN )
+    else if( event->type == SDL_KEYDOWN )
     {
         switch( event->key.keysym.sym )
         {
             case SDLK_w:
-                send(tcpSd, "W", sizeof("W"), 0);
+                commands.keyboardInput = 'W';
+                //send(tcpSd, "W", sizeof("W"), 0);
                 //printf("W \n");
                 break;
             case SDLK_s:
-                send(tcpSd, "S", sizeof("S"), 0);
+                commands.keyboardInput = 'S';
+                //send(tcpSd, "S", sizeof("S"), 0);
                 //printf("S \n");
                 break;
             case SDLK_a:
-                send(tcpSd, "A", sizeof("A"), 0);
+                commands.keyboardInput = 'A';
+                //send(tcpSd, "A", sizeof("A"), 0);
                 //printf("A \n");
                 break;
             case SDLK_d:
-                send(tcpSd, "D", sizeof("D"), 0);
+                commands.keyboardInput = 'D';
+                //send(tcpSd, "D", sizeof("D"), 0);
                 //printf("D \n");
                 break;
         }
+        
+        format_send_ctsCommand(&commands, tcpSd);
+
+        
     }
     //If a key was released
     else if( event->type == SDL_KEYUP )
@@ -146,23 +188,34 @@ void handel_input(struct playerInfo * player, SDL_Event * event, int tcpSd )
         switch( event->key.keysym.sym )
         {
             case SDLK_w:
-                send(tcpSd, "w", sizeof("W"), 0);
+                commands.keyboardInput = 'w';
+
+                //send(tcpSd, "w", sizeof("W"), 0);
                 //printf("W \n");
                 break;
             case SDLK_s:
-                send(tcpSd, "s", sizeof("S"), 0);
+                commands.keyboardInput = 's';
+
+                //send(tcpSd, "s", sizeof("S"), 0);
                 //printf("S \n");
                 break;
             case SDLK_a:
-                send(tcpSd, "a", sizeof("A"), 0);
+                commands.keyboardInput = 'a';
+
+                //send(tcpSd, "a", sizeof("A"), 0);
                 //printf("A \n");
                 break;
             case SDLK_d:
-                send(tcpSd, "d", sizeof("D"), 0);
+                commands.keyboardInput = 'd';
+
+                //send(tcpSd, "d", sizeof("D"), 0);
                 //printf("D \n");
                 break;
         }
+        
+        format_send_ctsCommand(&commands, tcpSd);
     }
+    
 }
 
 
