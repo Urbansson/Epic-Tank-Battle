@@ -80,7 +80,7 @@ void draw(struct playerInfo * player, struct cameraInfo * camera)
 {
     
     glTranslatef( player->xCord+ camera->xCord, player->yCord+ camera->yCord, 0);
-    
+
     glBegin(GL_QUADS);
     
     glColor3f(1,0,0);
@@ -123,12 +123,16 @@ void handel_input(struct playerInfo * player, SDL_Event * event, int tcpSd )
     struct ctsCommands commands;
     char buffer[20];
     
+    commands.mouseX = 0;
+    commands.mouseX = 0;
+    commands.keyboardInput = '0';
+    commands.mouseInput = '0';
     
     SDL_GetMouseState(&commands.mouseX, &commands.mouseY);
-    player->mouseX = commands.mouseX;
-    player->mouseY = commands.mouseY;
     
     
+    //player->mouseX = commands.mouseX;
+    //player->mouseY = commands.mouseY;
     //SDL_GetMouseState(&player->mouseX, &player->mouseY);
     
     if( event->type == SDL_MOUSEBUTTONDOWN )
@@ -147,7 +151,7 @@ void handel_input(struct playerInfo * player, SDL_Event * event, int tcpSd )
                 commands.mouseInput = 'N';
         }
 
-        format_send_ctsCommand(&commands, tcpSd);
+        //format_send_ctsCommand(&commands, tcpSd);
     }
     
     //If key is pressed down
@@ -177,7 +181,7 @@ void handel_input(struct playerInfo * player, SDL_Event * event, int tcpSd )
                 break;
         }
         
-        format_send_ctsCommand(&commands, tcpSd);
+        //format_send_ctsCommand(&commands, tcpSd);
 
         
     }
@@ -213,8 +217,10 @@ void handel_input(struct playerInfo * player, SDL_Event * event, int tcpSd )
                 break;
         }
         
-        format_send_ctsCommand(&commands, tcpSd);
+        //format_send_ctsCommand(&commands, tcpSd);
     }
+    format_send_ctsCommand(&commands, tcpSd);
+
     
 }
 

@@ -9,7 +9,7 @@
 #ifndef _PROTOCOL_H
 #define _PROTOCOL_H
 
-// Server to Client Info sent via UDP
+// Server to Client Info sent via UDP 
 struct stcInfo
 {
     char destination[20];   //The destination ip for the information

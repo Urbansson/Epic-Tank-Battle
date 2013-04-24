@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
          }
         
         // PRob best in sep thread
+        
         if (player[0].mouseX <= 50 && camera.xCord <= 200)
         {
             camera.xCord += 6;
@@ -106,7 +107,10 @@ int main(int argc, char *argv[])
             camera.yCord -= 6;
         }
         
+
         
+        
+        //printf("Player x: %d Camera x: %d");
         //printf("CAm x: %d Y: %d\n", camera.xCord, camera.yCord);
         
         //In its own thread.
@@ -151,10 +155,10 @@ int main(int argc, char *argv[])
 void * recive_udp_data(void * parameters)
 {
     
-    char buffer[32];
+    char buffer[64];
     char temp[5];
     int pos, devider = 0;
-    struct stcMoveInfo moveInfo;
+    struct stcInfo moveInfo;
     
     struct playerInfo * player = (struct playerInfo*) parameters;
     
@@ -163,9 +167,11 @@ void * recive_udp_data(void * parameters)
     {
         recvfrom(UdpInfo.udpSd, buffer, sizeof(buffer), 0, UdpInfo.serverIp, sizeof(UdpInfo.serverIp));
     
+        sscanf(buffer, "%d,%d,%d,%d,%d", &moveInfo.x, &moveInfo.y , &moveInfo.player, &moveInfo.mouseX, &moveInfo.mouseY);
+        //printf("%d,%d,%d,%d,%d\n", moveInfo.x, moveInfo.y , moveInfo.player, moveInfo.mouseX, moveInfo.mouseY);
         //printf("recived from server: %s \n", buffer);
     
-    
+        /*
         for (pos = 0; pos < 9; pos++)
         {
             if (buffer[pos] == ',')
@@ -191,10 +197,14 @@ void * recive_udp_data(void * parameters)
                 }
             }
         }
-    
+    */
+        
+        //Saves the incoming data in the players struct.
         player[moveInfo.player].slot = moveInfo.player;
         player[moveInfo.player].xCord = moveInfo.x;
         player[moveInfo.player].yCord = moveInfo.y;
+        player[moveInfo.player].mouseX = moveInfo.mouseX;
+        player[moveInfo.player].mouseY = moveInfo.mouseY;
     }
     
 }

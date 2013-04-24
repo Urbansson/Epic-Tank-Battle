@@ -21,7 +21,8 @@ struct playerInfo
     int mouseX, mouseY;
 };
 
-struct cameraInfo {
+struct cameraInfo
+{
     int xCord;
     int yCord;
 };
@@ -33,7 +34,6 @@ int initGL();
 void draw(struct playerInfo * player, struct cameraInfo * camera);
 
 void map(struct cameraInfo * camera);
-
 
 void handel_input(struct playerInfo * player, SDL_Event * event, int tcpSd );
 

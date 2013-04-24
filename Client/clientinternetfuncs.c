@@ -94,7 +94,6 @@ void format_send_ctsCommand(struct ctsCommands *commands, int tcpSd)
     //Formats to send
     sprintf(buffer, "%d, %d, %c, %c",commands->mouseX,commands->mouseY,commands->mouseInput,commands->keyboardInput);
     
-    printf("SENDING: %s\n", buffer);
     //Sends the commands to the server
     send(tcpSd, buffer, sizeof(buffer), 0);
 }
