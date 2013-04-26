@@ -80,9 +80,11 @@ int main(int argc, char *argv[])
                  run = FALSE;
              }
              
-             handel_input(&player[0], &event, tcpSd );
+             handel_input(&event, tcpSd );
             
          }
+        
+        
         
         // PRob best in sep thread
         

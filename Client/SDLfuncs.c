@@ -118,7 +118,7 @@ void map(struct cameraInfo * camera)
 
 }
 
-void handel_input(struct playerInfo * player, SDL_Event * event, int tcpSd )
+void handel_input(SDL_Event * event, int tcpSd )
 {
     struct ctsCommands commands;
     char buffer[20];
@@ -219,6 +219,7 @@ void handel_input(struct playerInfo * player, SDL_Event * event, int tcpSd )
         
         //format_send_ctsCommand(&commands, tcpSd);
     }
+    
     format_send_ctsCommand(&commands, tcpSd);
 
     

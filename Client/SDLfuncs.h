@@ -35,6 +35,6 @@ void draw(struct playerInfo * player, struct cameraInfo * camera);
 
 void map(struct cameraInfo * camera);
 
-void handel_input(struct playerInfo * player, SDL_Event * event, int tcpSd );
+void handel_input(SDL_Event * event, int tcpSd );
 
 #endif
