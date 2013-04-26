@@ -55,6 +55,7 @@ int main(void)
     int sd, newSd;              //Socket descriptors sd is the one main listens on newSd is the one clients gets.
     struct sockaddr_in cliAddr; //Information about the client
     socklen_t cliLen;           //
+    char buffer[5];
 
     pthread_t server_db_print;  //Debug print thread information
     
@@ -99,13 +100,17 @@ int main(void)
         
         //Finds the first free slot
         clientSlot = find_free_slot(clientInfo, MAX_PLAYERS);
-        
+                
         if(clientSlot==-1)
         {
             send(newSd,"No free slots, try again later!\n", sizeof("No free slots, try again later!\n"), 0);
             close(newSd); // Close the socket descriptor to indicate to client that
             continue;     // we have no more space for it. Then goto beginning of loop.
         }
+        
+        sprintf(buffer, "%d", clientSlot);
+        send(newSd, buffer, sizeof(buffer), 0);
+
         
         clientInfo[clientSlot].free = 1;            // Sets the client slot so it is taken
         clientInfo[clientSlot].sd = newSd;          // Gives the slot the socket descriptor

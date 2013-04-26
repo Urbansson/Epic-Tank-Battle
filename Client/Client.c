@@ -35,6 +35,8 @@ int main(int argc, char *argv[])
     struct timerInfo fps;
     int udpSd, tcpSd;
     struct cameraInfo camera;
+    int myId;
+    char buffer[5];
 
     SDL_Event event;
     
@@ -56,17 +58,13 @@ int main(int argc, char *argv[])
 
     
     init();
-
-    //player[].xCord = 0;
-    //player[].yCord = 0;
-    //player[].yVel = 0;
-    //player.xVel = 0;
+    
+    recv(tcpSd, buffer, sizeof(buffer), 0);
+    myId = atoi(buffer);
     
     camera.xCord = 0;
     camera.yCord = 0;
 
-    
-    //pthread_create( &movCalc, NULL, calculate_movement, &(player));
     pthread_create( &reciveUdpData, NULL, recive_udp_data, &(player));
 
 
@@ -88,21 +86,21 @@ int main(int argc, char *argv[])
         
         // PRob best in sep thread
         
-        if (player[0].mouseX <= 50 && camera.xCord <= 200)
+        if (player[myId].mouseX <= 50 && camera.xCord <= 200)
         {
             camera.xCord += 6;
         }
-        if (player[0].mouseX >= 750 && camera.xCord >= -1800)
+        if (player[myId].mouseX >= 750 && camera.xCord >= -1800)
         {
             camera.xCord -= 6;
         }
         
         
-        if (player[0].mouseY <= 50  && camera.yCord <= 200)
+        if (player[myId].mouseY <= 50  && camera.yCord <= 200)
         {
             camera.yCord += 6;
         }
-        if (player[0].mouseY >= 550 && camera.yCord >= -1400)
+        if (player[myId].mouseY >= 550 && camera.yCord >= -1400)
         {
             camera.yCord -= 6;
         }
@@ -208,42 +206,3 @@ void * recive_udp_data(void * parameters)
     }
     
 }
-
-//This will be done on the server
-
-/*
-void * calculate_movement(void * parameters)
-{
-    struct playerInfo * player = (struct playerInfo*) parameters;
-    
-    struct timerInfo calcs;
-    
-    
-    for (;;)
-    {
-        calcs.ticks = SDL_GetTicks();
- 
-        player->xCord += player->xVel;
-        
-        if (player->xCord < 0 || player->xCord + HITBOX > SCREEN_WIDTH )
-        {
-            player->xCord -= player->xVel;
-
-        }
-        
-        player->yCord += player->yVel;
-        
-        if (player->yCord < 0 || player->yCord + HITBOX > SCREEN_HIGHT )
-        {
-            player->yCord -= player->yVel;
-        }
-        
-        //Allows 200 calculations every sec
-        if( timer_get_ticks(&calcs) < 1000 / 200 )
-        {
-            SDL_Delay( ( 1000 / 200 ) - timer_get_ticks(&calcs) );
-        }
-    }
-
-}
-*/
