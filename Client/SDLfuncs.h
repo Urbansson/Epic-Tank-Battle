@@ -5,7 +5,8 @@
 #define SCREEN_HIGHT 600
 #define SCREEN_BPP 32
 
-#define HITBOX 30
+#define HITBOX_WIDTH 64
+#define HITBOX_HIGHT 45
 
 #define MAP_WIDTH 2400
 #define MAP_HIGHT 1800
@@ -31,9 +32,11 @@ int init();
 
 int initGL();
 
-void draw(struct playerInfo * player, struct cameraInfo * camera);
+void draw_self(struct playerInfo * player, struct cameraInfo * camera);
 
-void map(struct cameraInfo * camera);
+void draw_other(struct playerInfo * player, struct cameraInfo * camera);
+
+void map(struct playerInfo * player);
 
 void handel_input(SDL_Event * event, int tcpSd );
 

@@ -76,10 +76,10 @@ int initGL()
     
 }
 
-void draw(struct playerInfo * player, struct cameraInfo * camera)
+void draw_self(struct playerInfo * player, struct cameraInfo * camera)
 {
     
-    glTranslatef( player->xCord+ camera->xCord, player->yCord+ camera->yCord, 0);
+    glTranslatef( 400-HITBOX_WIDTH/2, 300-HITBOX_HIGHT/2, 0);
 
     glBegin(GL_QUADS);
     
@@ -87,9 +87,9 @@ void draw(struct playerInfo * player, struct cameraInfo * camera)
 
     
     glVertex2f( 0,      0      );
-    glVertex2f( HITBOX, 0      );
-    glVertex2f( HITBOX, HITBOX );
-    glVertex2f( 0,      HITBOX );
+    glVertex2f( HITBOX_WIDTH, 0      );
+    glVertex2f( HITBOX_WIDTH, HITBOX_HIGHT );
+    glVertex2f( 0,      HITBOX_HIGHT );
     
     glEnd();
     
@@ -97,10 +97,31 @@ void draw(struct playerInfo * player, struct cameraInfo * camera)
     glLoadIdentity();
 }
 
-void map(struct cameraInfo * camera)
+void draw_other(struct playerInfo * player, struct cameraInfo * camera)
+{
+    
+    glTranslatef( player->xCord+ camera->xCord+ 400-HITBOX_WIDTH/2, player->yCord + camera->yCord+300-HITBOX_HIGHT/2, 0);
+        
+    glBegin(GL_QUADS);
+    
+    glColor3f(1,0,0);
+    
+    glVertex2f( 0,      0      );
+    glVertex2f( HITBOX_WIDTH, 0      );
+    glVertex2f( HITBOX_WIDTH, HITBOX_HIGHT );
+    glVertex2f( 0,      HITBOX_HIGHT );
+    
+    glEnd();
+    
+    //Resets
+    glLoadIdentity();
+}
+
+
+void map(struct playerInfo * player)
 {
 
-    glTranslatef( camera->xCord, camera->yCord, 0);
+    glTranslatef( -1*player->xCord+400-HITBOX_WIDTH/2, -1*player->yCord+300-HITBOX_HIGHT/2, 0);
     
     glBegin(GL_QUADS);
 

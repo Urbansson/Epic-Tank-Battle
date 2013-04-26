@@ -321,14 +321,14 @@ void *movement_calculations(void *parameters)
         //Limits the client to the screen
         clientInfo->xLocation += clientInfo->xVelocity;
         
-        if (clientInfo->xLocation < 0 || clientInfo->xLocation+ 30 > 2400 )
+        if (clientInfo->xLocation < 0 || clientInfo->xLocation+ 64 > 2400 )
         {
             clientInfo->xLocation -= clientInfo->xVelocity;
         }
         
         clientInfo->yLocation += clientInfo->yVelocity;
         
-        if (clientInfo->yLocation < 0 || clientInfo->yLocation + 30 > 1800 )
+        if (clientInfo->yLocation < 0 || clientInfo->yLocation + 45 > 1800 )
         {
             clientInfo->yLocation -= clientInfo->yVelocity;
         }

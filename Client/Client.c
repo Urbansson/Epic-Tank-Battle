@@ -64,6 +64,8 @@ int main(int argc, char *argv[])
     
     camera.xCord = 0;
     camera.yCord = 0;
+    player[1].xCord = 0;
+    player[1].yCord = 0;
 
     pthread_create( &reciveUdpData, NULL, recive_udp_data, &(player));
 
@@ -84,51 +86,29 @@ int main(int argc, char *argv[])
             
          }
         
+        printf("Player x: %d player y: %d\n", player[myId].xCord, player[myId].yCord);
+        printf("CAm x: %d Y: %d\n", camera.xCord, camera.yCord);
+        camera.xCord = -player[myId].xCord;
+        camera.yCord = -player[myId].yCord;
         
-        
-        // PRob best in sep thread
-        
-        if (player[myId].mouseX <= 50 && camera.xCord <= 200)
-        {
-            camera.xCord += 6;
-        }
-        if (player[myId].mouseX >= 750 && camera.xCord >= -1800)
-        {
-            camera.xCord -= 6;
-        }
-        
-        
-        if (player[myId].mouseY <= 50  && camera.yCord <= 200)
-        {
-            camera.yCord += 6;
-        }
-        if (player[myId].mouseY >= 550 && camera.yCord >= -1400)
-        {
-            camera.yCord -= 6;
-        }
-        
-
-        
-        
-        //printf("Player x: %d Camera x: %d");
-        //printf("CAm x: %d Y: %d\n", camera.xCord, camera.yCord);
         
         //In its own thread.
         
         //Clears the screen
         glClear( GL_COLOR_BUFFER_BIT );
         
-        map(&camera);
+        map(&player[myId]);
 
         //draws box on screen
-        draw(&player[0], &camera);
-        draw(&player[1], &camera);
-        draw(&player[2], &camera);
-        draw(&player[3], &camera);
-        draw(&player[4], &camera);
-        draw(&player[5], &camera);
+        
+        
+        draw_self(&player[myId], &camera);
+        
+        
+        draw_other(&player[1], &camera);
+        
+        
         //If once connected player is never removed
-
 
         
         //Waits until everything is drawn on the screen
