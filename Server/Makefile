@@ -1,20 +1,17 @@
 All: Server 
 
-Server: install_server.o install_internetFuncs.o
-	gcc install_server.o install_internetFuncs.o -o Server -lpthread -lm  
+Server: install_server.o install_internetFuncs.o install_calculations.o
+	gcc install_server.o install_internetFuncs.o install_calculations.o -o Server -lpthread -lm  
     
-Client: install_client.o
-	gcc install_client.o -o Client -lm -ldl -lpthread -lSDL -lglut   
+install_calculations.o: calculations.c calculations.h
+	gcc -c calculations.c -o install_calculations.o   
 
 install_server.o:   server.c 
 	gcc -c server.c -o install_server.o
     
-install_client.o:   client.c 
-	gcc -c client.c -o install_client.o
-
 install_internetFuncs.o: internetFuncs.h internetFuncs.c
-	gcc -c	internetFuncs.c	-o install_internetfuncs.o
-    
+	gcc -c	internetFuncs.c	 -o install_internetfuncs.o
+
 clean:
 	rm *.o
 	rm *~

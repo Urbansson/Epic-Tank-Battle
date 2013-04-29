@@ -5,8 +5,7 @@
 
 float ballistic_angle(int currentPositionX,int currentPositionY, int destinationPositionX, int destinationPositionY)
 {
-(float) (clientInfo->yLocation - newY) / (float) (clientInfo->xLocation - newX);
-
+    return (float) (currentPositionY - destinationPositionY) / (float) (currentPositionX - destinationPositionX);
 }
 
 

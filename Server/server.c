@@ -9,7 +9,7 @@
 #include <math.h>
 
 #include "internetFuncs.h"
-#include "calculations.c"
+#include "calculations.h"
 
 
 #include "protocol.h"
@@ -18,7 +18,7 @@
 
 #define HITBOX_WIDTH 64
 #define HITBOX_HIGHT 45
-#define RANGE 900
+#define RANGE 600
 
 struct client
 {
@@ -371,96 +371,88 @@ void *bullet_movement_calc(void *parameters)
     double angle;
     int newX, newY;
     float dxdy;
+    int i;
+    int tempXLocation, tempYLocation;
+    
+    
     
     struct client * clientInfo = (struct client*)parameters;
     
+    tempXLocation = clientInfo->xLocation + HITBOX_WIDTH/2;
+    tempYLocation = clientInfo->yLocation + HITBOX_HIGHT/2;
+
     clientInfo->fire = 1;
         
-    angle = atan2(clientInfo->mouseY-300, clientInfo->mouseX-400);
-        
-    clientInfo->bulletX = clientInfo->xLocation + HITBOX_WIDTH/2;
-    clientInfo->bulletY = clientInfo->yLocation + HITBOX_HIGHT/2;
+    angle = (atan2(clientInfo->mouseY-300, clientInfo->mouseX-400));
     
-    printf("BULLET START X: %d Y %d\n", clientInfo->bulletX, clientInfo->bulletY);
+    printf("ANGLE IS %f\n", (float) angle*(180/3.1415));
     
-    newX = RANGE*cos(angle)+clientInfo->bulletX;
-    newY = RANGE*sin(angle)+clientInfo->bulletY;
-
-    dxdy = (float) (clientInfo->yLocation - newY) / (float) (clientInfo->xLocation - newX);
-    
-    printf("DXDY: %f\n", dxdy);
-    
-    
+    for (i = 0; i <= RANGE; i++)
+    {
+        clientInfo->bulletX = tempXLocation+i*cos(angle);
+        clientInfo->bulletY = tempYLocation+i*sin(angle);
+        usleep(3000);
+    }
     
     
     
     
     
     /*
+    clientInfo->bulletX = clientInfo->xLocation + HITBOX_WIDTH/2;
+    clientInfo->bulletY = clientInfo->yLocation + HITBOX_HIGHT/2;
+    
+    printf("BULLET START X: %d Y %d\n", clientInfo->bulletX, clientInfo->bulletY);
+    
+    newX = RANGE*cos(angle) + clientInfo->bulletX;
+    newY = RANGE*sin(angle) + clientInfo->bulletY;
+
+    //dxdy = ballistic_angle(clientInfo->bulletX, clientInfo->bulletY, newX, newY);
+    //printf("DXDY: %f\n", dxdy);
+    
     if (angle > -0.78 &&  angle < 0 || angle < 0.73 && angle > 0 || angle > 2.34 && angle < 3.14 || angle < -2.34 && angle > -3.14)
     {
-        tempXY = clientInfo->bulletY;
-        while (1)
+        for (;;)
         {
-            if (clientInfo->bulletX > newX)
-            {
-                clientInfo->bulletX -= 1;
-                clientInfo->bulletY = k* (float) clientInfo->bulletX;
-                clientInfo->bulletY += tempXY;
-            }
             if (clientInfo->bulletX < newX)
             {
                 clientInfo->bulletX += 1;
-                clientInfo->bulletY = k* (float) clientInfo->bulletX;
-                clientInfo->bulletY += tempXY;
-
+                clientInfo->bulletY = -1*(clientInfo->bulletX/angle);
+            }
+            if (clientInfo->bulletX > newX)
+            {
+                clientInfo->bulletX -= 1;
             }
             
             if (clientInfo->bulletX == newX)
+            {
                 break;
-            
-            printf("BULLETX: %d BULLETY %d \n", clientInfo->bulletX, clientInfo->bulletY);
-            usleep(100000);
+            }
+            usleep(4000);
         }
     }
     else
     {
-        tempXY = clientInfo->bulletX;
-        while (1)
+        for (;;)
         {
+            if (clientInfo->bulletY < newY)
+            {
+                clientInfo->bulletY += 1;
+            }
             if (clientInfo->bulletY > newY)
             {
                 clientInfo->bulletY -= 1;
-                clientInfo->bulletX = clientInfo->bulletY/k;
-                clientInfo->bulletX += tempXY;
-
-            }
-            if (clientInfo->bulletY < newY)
-            {
-                clientInfo->bulletY+= 1;
-                clientInfo->bulletX = clientInfo->bulletY/k;
-                clientInfo->bulletX += tempXY;
-
             }
             
             if (clientInfo->bulletY == newY)
+            {
                 break;
-            
-            
-            //printf("BULLETX: %d BULLETY %d \n", clientInfo->bulletX, clientInfo->bulletY);
-            usleep(2000);
+            }
+            usleep(4000);
+        }
     }
 
-    }
-    //printf("From X %d Y %d\n", clientInfo->xLocation, clientInfo->yLocation);
-    //printf("TO x %d Y %d\n", newX, newY);
-    
-    clientInfo->bulletX = 0;
-    clientInfo->bulletY = 0;
-    clientInfo->fire = 0;
-    
      */
-    usleep(1000);
     clientInfo->fire = 0;
 
     return NULL;
