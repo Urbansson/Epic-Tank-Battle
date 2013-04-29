@@ -20,6 +20,8 @@ struct playerInfo
     int xCord, yCord;
     int xVel, yVel;
     int mouseX, mouseY;
+    int fire;
+    int bulletX, bulletY;
 };
 
 struct cameraInfo
@@ -35,6 +37,8 @@ int initGL();
 void draw_self(struct playerInfo * player, struct cameraInfo * camera);
 
 void draw_other(struct playerInfo * player, struct cameraInfo * camera);
+
+void draw_bullet(struct playerInfo * player, struct cameraInfo * camera);
 
 void map(struct playerInfo * player);
 

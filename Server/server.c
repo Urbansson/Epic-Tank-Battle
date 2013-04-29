@@ -5,12 +5,20 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <pthread.h>
+
+#include <math.h>
+
 #include "internetFuncs.h"
+#include "calculations.c"
+
 
 #include "protocol.h"
 
 #define MAX_PLAYERS 6
 
+#define HITBOX_WIDTH 64
+#define HITBOX_HIGHT 45
+#define RANGE 900
 
 struct client
 {
@@ -29,6 +37,10 @@ struct client
     int mouseY;
     char mouseInput;
     
+    int fire; // If We fire or not
+    int bulletX;
+    int bulletY;
+    
 };
 
 struct udp_info udpCliInfo[MAX_PLAYERS];
@@ -45,6 +57,7 @@ int find_free_slot(struct client clientInfo[], int n);
 
 void *movement_calculations(void *parameters);
 
+void *bullet_movement_calc(void *parameters);
 
 void *broadcast_location();
 
@@ -204,13 +217,16 @@ void *client_handler_function(void *parameters)
 
     pthread_t broadcastLocation;
     pthread_t calculations;
+    pthread_t bulletCalculations = 0;
+
     
     struct client * clientInfo = (struct client*)parameters;
     
     //Set start postion for clitent
     clientInfo->xLocation = 0;
     clientInfo->yLocation = 0;
-    
+    clientInfo->fire = 0;
+
     
     
     printf("Connection from: %s\n", clientInfo->client_ip_addr);
@@ -239,7 +255,8 @@ void *client_handler_function(void *parameters)
         
         clientInfo->mouseX = commands.mouseX;
         clientInfo->mouseY = commands.mouseY;
-        clientInfo->mouseInput = commands.keyboardInput;
+        clientInfo->mouseInput = commands.mouseInput;
+        
         
         switch(commands.keyboardInput)
         {
@@ -268,14 +285,26 @@ void *client_handler_function(void *parameters)
             case 'd':
                 clientInfo->xVelocity -= 1;
                 break;
+                
+            default:
+                break;
          }
+        
+    
+        //THIS IS DANGEROUS CAN FUCK EWERYTHING!!!
+        if (clientInfo->mouseInput == 'L' &&     clientInfo->fire == 0)
+    {
+        pthread_create( &bulletCalculations, NULL, bullet_movement_calc, (clientInfo));
     }
 
-    
+        
+    }
     
     //If the clients quits or connection is lost cancel the broadcast thread
     pthread_cancel(broadcastLocation);
     pthread_cancel(calculations);
+    pthread_cancel(bulletCalculations);
+
 
 
     //Close sd
@@ -316,29 +345,126 @@ void *movement_calculations(void *parameters)
         }
         
         
-        
-        
         //Limits the client to the screen
         clientInfo->xLocation += clientInfo->xVelocity;
         
-        if (clientInfo->xLocation < 0 || clientInfo->xLocation+ 64 > 2400 )
+        if (clientInfo->xLocation < 0 || clientInfo->xLocation+ HITBOX_WIDTH > 2400 )
         {
             clientInfo->xLocation -= clientInfo->xVelocity;
         }
         
         clientInfo->yLocation += clientInfo->yVelocity;
         
-        if (clientInfo->yLocation < 0 || clientInfo->yLocation + 45 > 1800 )
+        if (clientInfo->yLocation < 0 || clientInfo->yLocation + HITBOX_HIGHT > 1800 )
         {
             clientInfo->yLocation -= clientInfo->yVelocity;
         }
         
-        
-        
-        
         //around 200 calcs every sec
         usleep(5000);
     }
+
+}
+
+void *bullet_movement_calc(void *parameters)
+{
+    double angle;
+    int newX, newY;
+    float dxdy;
+    
+    struct client * clientInfo = (struct client*)parameters;
+    
+    clientInfo->fire = 1;
+        
+    angle = atan2(clientInfo->mouseY-300, clientInfo->mouseX-400);
+        
+    clientInfo->bulletX = clientInfo->xLocation + HITBOX_WIDTH/2;
+    clientInfo->bulletY = clientInfo->yLocation + HITBOX_HIGHT/2;
+    
+    printf("BULLET START X: %d Y %d\n", clientInfo->bulletX, clientInfo->bulletY);
+    
+    newX = RANGE*cos(angle)+clientInfo->bulletX;
+    newY = RANGE*sin(angle)+clientInfo->bulletY;
+
+    dxdy = (float) (clientInfo->yLocation - newY) / (float) (clientInfo->xLocation - newX);
+    
+    printf("DXDY: %f\n", dxdy);
+    
+    
+    
+    
+    
+    
+    
+    /*
+    if (angle > -0.78 &&  angle < 0 || angle < 0.73 && angle > 0 || angle > 2.34 && angle < 3.14 || angle < -2.34 && angle > -3.14)
+    {
+        tempXY = clientInfo->bulletY;
+        while (1)
+        {
+            if (clientInfo->bulletX > newX)
+            {
+                clientInfo->bulletX -= 1;
+                clientInfo->bulletY = k* (float) clientInfo->bulletX;
+                clientInfo->bulletY += tempXY;
+            }
+            if (clientInfo->bulletX < newX)
+            {
+                clientInfo->bulletX += 1;
+                clientInfo->bulletY = k* (float) clientInfo->bulletX;
+                clientInfo->bulletY += tempXY;
+
+            }
+            
+            if (clientInfo->bulletX == newX)
+                break;
+            
+            printf("BULLETX: %d BULLETY %d \n", clientInfo->bulletX, clientInfo->bulletY);
+            usleep(100000);
+        }
+    }
+    else
+    {
+        tempXY = clientInfo->bulletX;
+        while (1)
+        {
+            if (clientInfo->bulletY > newY)
+            {
+                clientInfo->bulletY -= 1;
+                clientInfo->bulletX = clientInfo->bulletY/k;
+                clientInfo->bulletX += tempXY;
+
+            }
+            if (clientInfo->bulletY < newY)
+            {
+                clientInfo->bulletY+= 1;
+                clientInfo->bulletX = clientInfo->bulletY/k;
+                clientInfo->bulletX += tempXY;
+
+            }
+            
+            if (clientInfo->bulletY == newY)
+                break;
+            
+            
+            //printf("BULLETX: %d BULLETY %d \n", clientInfo->bulletX, clientInfo->bulletY);
+            usleep(2000);
+    }
+
+    }
+    //printf("From X %d Y %d\n", clientInfo->xLocation, clientInfo->yLocation);
+    //printf("TO x %d Y %d\n", newX, newY);
+    
+    clientInfo->bulletX = 0;
+    clientInfo->bulletY = 0;
+    clientInfo->fire = 0;
+    
+     */
+    usleep(1000);
+    clientInfo->fire = 0;
+
+    return NULL;
+
 
 }
 
@@ -357,7 +483,7 @@ void *broadcast_location(void *parameters)
     {
         
         //Formats the information for sending.
-        sprintf(buffer, "%d,%d,%d,%d,%d", clientInfo->xLocation,clientInfo->yLocation, clientInfo->mySlot, clientInfo->mouseX, clientInfo->mouseY);
+        sprintf(buffer, "%d,%d,%d,%d,%d,%d,%d,%d", clientInfo->xLocation,clientInfo->yLocation, clientInfo->mySlot, clientInfo->mouseX, clientInfo->mouseY,clientInfo->fire, clientInfo->bulletX, clientInfo->bulletY);
         
         //sprintf(buffer, "200,300,0");
         

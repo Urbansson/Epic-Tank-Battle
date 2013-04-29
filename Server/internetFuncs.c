@@ -11,7 +11,6 @@
 
 #include "internetFuncs.h"
 
-
 int tcp_init(void)
 {
     int sd;

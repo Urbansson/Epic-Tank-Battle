@@ -1,7 +1,7 @@
 All: Server 
 
 Server: install_server.o install_internetFuncs.o
-	gcc install_server.o install_internetFuncs.o -o Server -lpthread  
+	gcc install_server.o install_internetFuncs.o -o Server -lpthread -lm  
     
 Client: install_client.o
 	gcc install_client.o -o Client -lm -ldl -lpthread -lSDL -lglut   

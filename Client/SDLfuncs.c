@@ -118,6 +118,27 @@ void draw_other(struct playerInfo * player, struct cameraInfo * camera)
 }
 
 
+void draw_bullet(struct playerInfo * player, struct cameraInfo * camera)
+{
+    
+    glTranslatef( player->bulletX + camera->xCord+ 400-HITBOX_WIDTH/2, player->bulletY + camera->yCord+300-HITBOX_HIGHT/2, 0);
+    
+    glBegin(GL_QUADS);
+    
+    glColor3f(1,0,0);
+    
+    glVertex2f( 0,      0      );
+    glVertex2f( 15, 0      );
+    glVertex2f( 15, 10 );
+    glVertex2f( 0,      10 );
+    
+    glEnd();
+    
+    //Resets
+    glLoadIdentity();
+}
+
+
 void map(struct playerInfo * player)
 {
 
@@ -150,11 +171,6 @@ void handel_input(SDL_Event * event, int tcpSd )
     commands.mouseInput = '0';
     
     SDL_GetMouseState(&commands.mouseX, &commands.mouseY);
-    
-    
-    //player->mouseX = commands.mouseX;
-    //player->mouseY = commands.mouseY;
-    //SDL_GetMouseState(&player->mouseX, &player->mouseY);
     
     if( event->type == SDL_MOUSEBUTTONDOWN )
     {

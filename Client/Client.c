@@ -86,8 +86,8 @@ int main(int argc, char *argv[])
             
          }
         
-        printf("Player x: %d player y: %d\n", player[myId].xCord, player[myId].yCord);
-        printf("CAm x: %d Y: %d\n", camera.xCord, camera.yCord);
+        //printf("Player x: %d player y: %d\n", player[myId].xCord, player[myId].yCord);
+        //printf("CAm x: %d Y: %d\n", camera.xCord, camera.yCord);
         camera.xCord = -player[myId].xCord;
         camera.yCord = -player[myId].yCord;
         
@@ -99,15 +99,16 @@ int main(int argc, char *argv[])
         
         map(&player[myId]);
 
-        //draws box on screen
-        
-        
+        //draws your tank on screen
         draw_self(&player[myId], &camera);
         
-        
+        //Draws the other players tanks on the screen
         draw_other(&player[1], &camera);
         
-        
+        if (player[myId].fire == 1)
+        {
+            draw_bullet(&player[myId], &camera);
+        }
         //If once connected player is never removed
 
         
@@ -147,7 +148,10 @@ void * recive_udp_data(void * parameters)
     {
         recvfrom(UdpInfo.udpSd, buffer, sizeof(buffer), 0, UdpInfo.serverIp, sizeof(UdpInfo.serverIp));
     
-        sscanf(buffer, "%d,%d,%d,%d,%d", &moveInfo.x, &moveInfo.y , &moveInfo.player, &moveInfo.mouseX, &moveInfo.mouseY);
+        printf("recived from server: %s \n", buffer);
+
+        
+        sscanf(buffer, "%d,%d,%d,%d,%d,%d,%d,%d", &moveInfo.x, &moveInfo.y , &moveInfo.player, &moveInfo.mouseX, &moveInfo.mouseY,&moveInfo.fire, &moveInfo.bulletX, &moveInfo.bulletY);
         //printf("%d,%d,%d,%d,%d\n", moveInfo.x, moveInfo.y , moveInfo.player, moveInfo.mouseX, moveInfo.mouseY);
         //printf("recived from server: %s \n", buffer);
     
@@ -181,10 +185,18 @@ void * recive_udp_data(void * parameters)
         
         //Saves the incoming data in the players struct.
         player[moveInfo.player].slot = moveInfo.player;
+        
         player[moveInfo.player].xCord = moveInfo.x;
         player[moveInfo.player].yCord = moveInfo.y;
+        
         player[moveInfo.player].mouseX = moveInfo.mouseX;
         player[moveInfo.player].mouseY = moveInfo.mouseY;
+        
+        player[moveInfo.player].bulletX = moveInfo.bulletX;
+        player[moveInfo.player].bulletY = moveInfo.bulletY;
+        player[moveInfo.player].fire = moveInfo.fire;
+
+        
     }
     
 }
