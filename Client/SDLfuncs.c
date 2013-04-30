@@ -3,8 +3,9 @@
 
 #include "SDL/SDL.h"
 #include "SDL/SDL_opengl.h"
-#include <stdio.h>
+#include "SDL/SDL_image.h"
 
+#include <stdio.h>
 
 #include "SDLfuncs.h"
 #include "protocol.h" 
@@ -65,6 +66,9 @@ int initGL()
     //removes z-axis
     glDisable( GL_DEPTH_TEST );
     
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
     //Test for errors
     GLenum error = glGetError();
     if( error != GL_NO_ERROR )
@@ -76,89 +80,62 @@ int initGL()
     
 }
 
-void draw_self(struct playerInfo * player, struct cameraInfo * camera)
+GLuint load_image(char *fileName)
 {
+    SDL_Surface *surface;
+    GLenum texture_format;
+    GLint  nOfColors;
+    GLuint texture;
     
-    glTranslatef( 400-HITBOX_WIDTH/2, 300-HITBOX_HIGHT/2, 0);
-
-    glBegin(GL_QUADS);
+    if ( (surface = IMG_Load(fileName)) ) {
     
-    glColor3f(1,0,0);
-
-    
-    glVertex2f( 0,      0      );
-    glVertex2f( HITBOX_WIDTH, 0      );
-    glVertex2f( HITBOX_WIDTH, HITBOX_HIGHT );
-    glVertex2f( 0,      HITBOX_HIGHT );
-    
-    glEnd();
-    
-    //Resets
-    glLoadIdentity();
-}
-
-void draw_other(struct playerInfo * player, struct cameraInfo * camera)
-{
-    
-    glTranslatef( player->xCord+ camera->xCord+ 400-HITBOX_WIDTH/2, player->yCord + camera->yCord+300-HITBOX_HIGHT/2, 0);
         
-    glBegin(GL_QUADS);
+        // get the number of channels in the SDL surface
+        nOfColors = surface->format->BytesPerPixel;
+        if (nOfColors == 4)     // contains an alpha channel
+        {
+            if (surface->format->Rmask == 0x000000ff)
+                texture_format = GL_RGBA;
+            //else
+            //texture_format = GL_BGRA;
+        } else if (nOfColors == 3)     // no alpha channel
+        {
+            if (surface->format->Rmask == 0x000000ff)
+                texture_format = GL_RGB;
+            //else
+            //texture_format = GL_BGR;
+        } else {
+            printf("warning: the image is not truecolor..  this will probably break\n");
+            // this error should not go unhandled
+        }
+        
+        // Have OpenGL generate a texture object handle for us
+        glGenTextures( 1, &texture );
+        
+        // Bind the texture object
+        glBindTexture( GL_TEXTURE_2D, texture );
+        
+        // Set the texture's stretching properties
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+        
+        // Edit the texture object's image data using the information SDL_Surface gives us
+        glTexImage2D( GL_TEXTURE_2D, 0, nOfColors, surface->w, surface->h, 0,
+                     texture_format, GL_UNSIGNED_BYTE, surface->pixels );
+    }
+    else {
+        printf("SDL could not load %s: %s\n", fileName,SDL_GetError());
+        SDL_Quit();
+        //return 1;
+    }
     
-    glColor3f(1,0,0);
-    
-    glVertex2f( 0,      0      );
-    glVertex2f( HITBOX_WIDTH, 0      );
-    glVertex2f( HITBOX_WIDTH, HITBOX_HIGHT );
-    glVertex2f( 0,      HITBOX_HIGHT );
-    
-    glEnd();
-    
-    //Resets
-    glLoadIdentity();
+    // Free the SDL_Surface only if it was successfully created
+    if ( surface ) {
+        SDL_FreeSurface( surface );
+    }
+    return texture;
 }
 
-
-void draw_bullet(struct playerInfo * player, struct cameraInfo * camera)
-{
-    
-    glTranslatef( player->bulletX + camera->xCord+ 400-HITBOX_WIDTH/2, player->bulletY + camera->yCord+300-HITBOX_HIGHT/2, 0);
-    
-    glBegin(GL_QUADS);
-    
-    glColor3f(1,0,0);
-    
-    glVertex2f( 0,      0      );
-    glVertex2f( 15, 0      );
-    glVertex2f( 15, 10 );
-    glVertex2f( 0,      10 );
-    
-    glEnd();
-    
-    //Resets
-    glLoadIdentity();
-}
-
-
-void map(struct playerInfo * player)
-{
-
-    glTranslatef( -1*player->xCord+400-HITBOX_WIDTH/2, -1*player->yCord+300-HITBOX_HIGHT/2, 0);
-    
-    glBegin(GL_QUADS);
-
-    glColor3f(0,1,0);
-    
-    glVertex2f( 0,         0      );
-    glVertex2f( MAP_WIDTH, 0      );
-    glVertex2f( MAP_WIDTH, MAP_HIGHT );
-    glVertex2f( 0,         MAP_HIGHT );
-    
-    glEnd();
-
-    //resets
-    glLoadIdentity();
-
-}
 
 void handel_input(SDL_Event * event, int tcpSd )
 {

@@ -12,6 +12,7 @@
 #include "timers.h"
 #include "clientinternetfuncs.h"
 #include "protocol.h" 
+#include "render.h"
 
 #define FPS 60
 
@@ -39,6 +40,7 @@ int main(int argc, char *argv[])
     char buffer[5];
 
     SDL_Event event;
+    GLuint texture[2];
     
     strcpy(UdpInfo.serverIp, argv[1]);
     UdpInfo.udpSd = udp_init();
@@ -58,6 +60,10 @@ int main(int argc, char *argv[])
 
     
     init();
+    
+    texture[0] = load_image("flower.png");
+    texture[1] = load_image("gameMap.png");
+
     
     recv(tcpSd, buffer, sizeof(buffer), 0);
     myId = atoi(buffer);
@@ -97,25 +103,26 @@ int main(int argc, char *argv[])
         //Clears the screen
         glClear( GL_COLOR_BUFFER_BIT );
         
-        map(&player[myId]);
+        //map(&player[myId]);
+        draw_map(&texture[1], &player[myId]);
 
         //draws your tank on screen
         draw_self(&player[myId], &camera);
-        
-        //Draws the other players tanks on the screen
-        draw_other(&player[1], &camera);
         
         if (player[myId].fire == 1)
         {
             draw_bullet(&player[myId], &camera);
         }
-        //If once connected player is never removed
+        //Draws the other players tanks on the screen
+        //draw_other(&player[1], &camera);
+        
 
+        //draw_image(&texture[0]);
+        //If once connected player is never removed
         
         //Waits until everything is drawn on the screen
         glFlush();
 
-    
         //Draws on screen
         SDL_GL_SwapBuffers();
         
@@ -125,7 +132,6 @@ int main(int argc, char *argv[])
         {
             SDL_Delay( ( 1000 / FPS ) - timer_get_ticks(&fps) );
         }
-
             
     }
 
