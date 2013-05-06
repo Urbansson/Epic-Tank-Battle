@@ -1,7 +1,7 @@
 All: Client
 
-Client: install_client.o install_clientinternetfuncs.o install_SDLfuncs.o install_timers.o protocol.h install_render.o
-	gcc install_client.o install_clientinternetfuncs.o install_SDLfuncs.o install_timers.o install_render.o -o Client -lm -ldl -lpthread -lSDL -lglut -lSDL_image -O3 -lGL 
+Client: install_client.o install_clientinternetfuncs.o install_SDLfuncs.o install_timers.o protocol.h install_render.o install_audio.o
+	gcc install_client.o install_clientinternetfuncs.o install_SDLfuncs.o install_timers.o install_render.o install_audio.o -o Client -lm -ldl -lpthread -lSDL -lglut -lSDL_image -O3 -lGL -lSDL_mixer 
 
     
 install_client.o:   Client.c protocol.h
@@ -18,6 +18,9 @@ install_timers.o: timers.h	timers.c protocol.h
     
 install_render.o: render.h	render.c
 	gcc -c render.c -o install_render.o 
+
+install_audio.o: audio.h	audio.c
+	gcc -c audio.c -o install_audio.o
 
 clean:
 	rm *.o

@@ -7,6 +7,7 @@
 
 #include <pthread.h>
 #include <sys/types.h>
+#include "audio.h"
 
 #include "SDLfuncs.h"
 #include "timers.h"
@@ -62,7 +63,7 @@ int main(int argc, char *argv[])
     init();
     
     texture[0] = load_image("flower.png");
-    texture[1] = load_image("gameMap.png");
+    texture[1] = load_image("./Images/WorldMap1.png");
 
     
     recv(tcpSd, buffer, sizeof(buffer), 0);

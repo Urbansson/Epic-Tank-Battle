@@ -4,6 +4,7 @@
 #include "SDL/SDL.h"
 #include "SDL/SDL_opengl.h"
 #include "SDL/SDL_image.h"
+#include "audio.h"
 
 #include <stdio.h>
 
@@ -33,6 +34,14 @@ int init()
         return FALSE;
     }
     
+   	if (Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 4096) != 0)
+		{
+			printf("Could not open audio: %s\n", Mix_GetError());
+			
+			exit(1);
+		}
+		
+		load_soundfiles();
     SDL_WM_SetCaption("Client", NULL);
     
     return TRUE;
@@ -155,6 +164,7 @@ void handel_input(SDL_Event * event, int tcpSd )
         {
             case SDL_BUTTON_LEFT:
                 commands.mouseInput = 'L';
+								playSound(soundShoot);
                 //printf("LMB \n");
                 break;
             case SDL_BUTTON_RIGHT:
@@ -175,21 +185,25 @@ void handel_input(SDL_Event * event, int tcpSd )
         {
             case SDLK_w:
                 commands.keyboardInput = 'W';
+                playSound(soundMotor);
                 //send(tcpSd, "W", sizeof("W"), 0);
                 //printf("W \n");
                 break;
             case SDLK_s:
                 commands.keyboardInput = 'S';
+                playSound(soundMotor);
                 //send(tcpSd, "S", sizeof("S"), 0);
                 //printf("S \n");
                 break;
             case SDLK_a:
                 commands.keyboardInput = 'A';
+                playSound(soundMotor);
                 //send(tcpSd, "A", sizeof("A"), 0);
                 //printf("A \n");
                 break;
             case SDLK_d:
                 commands.keyboardInput = 'D';
+                playSound(soundMotor);
                 //send(tcpSd, "D", sizeof("D"), 0);
                 //printf("D \n");
                 break;
