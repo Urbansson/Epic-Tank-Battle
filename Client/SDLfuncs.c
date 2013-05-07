@@ -118,8 +118,11 @@ GLuint load_image(char *fileName)
             // this error should not go unhandled
         }
         
+        
+        //
+        printf("Hejsan\n");
         // Have OpenGL generate a texture object handle for us
-        glGenTextures( 1, &texture );
+        glGenTextures( 2, &texture );
         
         // Bind the texture object
         glBindTexture( GL_TEXTURE_2D, texture );
