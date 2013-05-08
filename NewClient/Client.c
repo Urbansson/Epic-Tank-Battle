@@ -37,18 +37,24 @@ int main(int argc, char *argv[])
     
     //SDL vars
     SDL_Event event;
+    //Screen
     SDL_Surface* screen = NULL;
+    //Tanks
     SDL_Surface* blueTank = NULL;
     SDL_Surface* blueCannon = NULL;
-    SDL_Surface* worldMap = NULL;
-    SDL_Surface* rotatedImage = NULL;
+    SDL_Surface* redTank = NULL;
+    SDL_Surface* redCannon = NULL;
+    
+    //Bullet
     SDL_Surface* bullet = NULL;
-    SDL_Surface* rotatedbullet = NULL;
-
-
-
-
-
+    //WorldMap
+    SDL_Surface* worldMap = NULL;
+    
+    //rotation Images
+    SDL_Surface* rotatedTank[6] = {NULL,NULL,NULL,NULL,NULL,NULL};
+    SDL_Surface* rotatedCannon[6] = {NULL,NULL,NULL,NULL,NULL,NULL};
+    SDL_Surface* rotatedBullet[6] = {NULL,NULL,NULL,NULL,NULL,NULL};
+    
     
     //Thread vars
     pthread_t reciveUdpData;
@@ -57,9 +63,13 @@ int main(int argc, char *argv[])
     int run;
     struct playerInfo player[6];
     struct timerInfo fps;
-    int oldAngle[6];
     struct cameraInfo camera;
     int bulletAngle[6];
+    
+    int oldCannonAngle[6];
+    int oldTankAngle[6] = {1000,1000,1000,1000,1000,1000};
+
+
     
 
     //inits Sdl and opens the screen
@@ -72,12 +82,12 @@ int main(int argc, char *argv[])
         return 0;
     }
     
-    //load all the images
+    //load the images (Function maybe)
     blueTank = load_image( "./images/blueTank.bmp" );
     blueCannon = load_image( "./images/blueCannon.bmp" );
-
+    redTank = load_image( "./images/redTank.bmp" );
+    redCannon = load_image( "./images/redCannon.bmp" );
     worldMap = load_image( "./images/worldMap.bmp" );
-    
     bullet = load_image( "./images/bullet.bmp" );
 
     
@@ -114,51 +124,70 @@ int main(int argc, char *argv[])
         camera.yCord = -player[myId].yCord;
         
         
-        
         //From here we draw stuff on the screen
         SDL_FillRect(screen,NULL, 0x000000);
 
         
         //Draws WorldMAps
-        apply_surface(-1*player[myId].xCord+400-32,-1*player[myId].yCord+300-22, worldMap, screen);
-        
-        
+        draw_map(player[myId].xCord,player[myId].yCord, worldMap, screen);
+
+        /*
         //Draws Tank body centered
-        apply_surface(400-(32),300-(23), blueTank, screen);
+         SDL_Rect tempoffset = {400-32,300-23,0,0};
         
+         SDL_BlitSurface(blueTank, NULL, screen, &tempoffset);
+        //apply_surface(400-(32),300-(23), blueTank, screen);
+          */
         
-        
-        
-        //Calculates the angle
-        player[myId].angle = calculate_angle(player[myId].mouseY, player[myId].mouseX);
-        
-        if (player[myId].angle != oldAngle[myId])
+        if (player[myId].tankAngle != oldTankAngle[myId])
         {
-            printf("Angle is: %d\n", player[myId].angle);
-            
-            SDL_FreeSurface( rotatedImage );
-            //rotatedImage = rotate_image(blueCannon, player[myId].angle);
-            rotatedImage = rotozoomSurface(blueCannon,player[myId].angle,1.0,0);
-            oldAngle[myId] = player[myId].angle;
+            SDL_FreeSurface( rotatedTank[myId] );
+
+            rotatedTank[myId] = rotozoomSurface(blueTank,player[myId].tankAngle,1.0,0);
+            oldTankAngle[myId] = player[myId].cannonAngle;
         }
         
-        SDL_Rect offset = {400,300,0,0};
+        SDL_Rect SelfTankoffset = {400,300,0,0};
         
-        offset.x -= (rotatedImage->w/2);
-        offset.y -= rotatedImage->h/2;
+        //printf("FUNKAR HÄR\n");
+
+        SelfTankoffset.x -= (rotatedTank[myId]->w/2);
+        SelfTankoffset.y -= (rotatedTank[myId]->h/2);
         
-        SDL_BlitSurface(rotatedImage, NULL, screen, &offset);
+        //printf("FUNKAR OCH HÄR\n");
+
+        SDL_BlitSurface(rotatedTank[myId], NULL, screen, &SelfTankoffset);
+        
 
         
-        if (player[myId].fire == 1)
+        
+        //ROTATES YOUR CANNON++++++++++++++++++++++++++++++        
+        if (player[myId].cannonAngle != oldCannonAngle[myId])
+        {            
+            SDL_FreeSurface( rotatedCannon[myId] );
+            rotatedCannon[myId] = rotozoomSurface(blueCannon,player[myId].cannonAngle,1.0,0);
+            oldCannonAngle[myId] = player[myId].cannonAngle;
+        }
+        
+        SDL_Rect SelfCannonoffset = {400,300,0,0};
+        
+        SelfCannonoffset.x -= (rotatedCannon[myId]->w/2);
+        SelfCannonoffset.y -= (rotatedCannon[myId]->h/2);
+        
+        SDL_BlitSurface(rotatedCannon[myId], NULL, screen, &SelfCannonoffset);
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        
+        
+        //DISPLAYS YOUR BULLET++++++++++++++++++++++++++++++
+        if (player[myId].fire > 0)
         {
             if (bulletAngle[myId] == 0)
             {
-                SDL_FreeSurface( rotatedbullet );
-                rotatedbullet = rotozoomSurface(bullet,player[myId].angle,1.0,0);
+                SDL_FreeSurface( rotatedBullet[myId] );
+                rotatedBullet[myId] = rotozoomSurface(bullet,player[myId].cannonAngle,1.0,0);
             }
             
-            draw_bullet(&player[myId], &camera, rotatedbullet, screen );
+            draw_bullet(&player[myId], &camera, rotatedBullet[myId], screen );
             bulletAngle[myId] = 1;
         }
         
@@ -166,15 +195,13 @@ int main(int argc, char *argv[])
         {
             bulletAngle[myId]=0;
         }
-    /// funktioner
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+        
         //Update Screen
         SDL_Flip( screen );
         
-        
-        
-        
-        
+
         //Cap the frame rate
         if( timer_get_ticks(&fps) < 1000 / FPS )
         {
@@ -202,7 +229,7 @@ void * recive_udp_data(void * parameters)
         
         printf("recived from server: %s \n", buffer);
         
-        sscanf(buffer, "%d,%d,%d,%d,%d,%d,%d,%d", &moveInfo.x, &moveInfo.y , &moveInfo.player, &moveInfo.mouseX, &moveInfo.mouseY,&moveInfo.fire, &moveInfo.bulletX, &moveInfo.bulletY);
+        sscanf(buffer, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", &moveInfo.x, &moveInfo.y , &moveInfo.player, &moveInfo.mouseX, &moveInfo.mouseY,&moveInfo.fire, &moveInfo.bulletX, &moveInfo.bulletY, &moveInfo.tankAngle, &moveInfo.cannonAngle);
         
         
         //Saves the incoming data in the players struct.
@@ -218,7 +245,10 @@ void * recive_udp_data(void * parameters)
         player[moveInfo.player].bulletY = moveInfo.bulletY;
         player[moveInfo.player].fire = moveInfo.fire;
         
-    
+        player[moveInfo.player].tankAngle = -1*moveInfo.tankAngle;
+        player[moveInfo.player].cannonAngle = -1*moveInfo.cannonAngle;
+        
+        sleep(0);
     }
     
 }

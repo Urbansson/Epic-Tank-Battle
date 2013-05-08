@@ -151,15 +151,14 @@ SDL_Surface *load_image( char filename[] )
     return optimizedImage;
 }
 
-void apply_surface( int x, int y, SDL_Surface* source, SDL_Surface* destination )
+void draw_map( int x, int y, SDL_Surface* source, SDL_Surface* destination )
 {
-    
     //Make a temporary rectangle to hold the offsets
     SDL_Rect offset;
     
     //Give the offsets to the rectangle
-    offset.x = x;
-    offset.y = y;
+    offset.x = -1*(x-SCREEN_WIDTH/2+HITBOX_WIDTH/2);
+    offset.y = -1*(y-SCREEN_HIGHT/2+HITBOX_HIGHT/2);
     
     //Blit the surface
     SDL_BlitSurface( source, NULL, destination, &offset );

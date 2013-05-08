@@ -20,6 +20,9 @@
 #define HITBOX_HIGHT 45
 #define RANGE 600
 
+#define TRUE 1
+#define FALSE 0
+
 struct client
 {
     pthread_t threadId;         //Thread Id
@@ -30,8 +33,14 @@ struct client
     
     int xLocation;
     int yLocation;
-    int xVelocity;
-    int yVelocity;
+    
+    int forward;
+    int backward;
+    int turnLeft;
+    int turnRight;
+
+    int tankAngle;
+    int cannonAngle;
     
     int mouseX;
     int mouseY;
@@ -40,7 +49,10 @@ struct client
     int fire; // If We fire or not
     int bulletX;
     int bulletY;
+    int bulletHit;
     
+    int speed;
+    int collision;
 };
 
 struct udp_info udpCliInfo[MAX_PLAYERS];
@@ -55,9 +67,12 @@ void * debeugger_print_thread(void *parameters);
 
 int find_free_slot(struct client clientInfo[], int n);
 
-void *movement_calculations(void *parameters);
+void *tank_calculations(void *parameters);
 
 void *bullet_movement_calc(void *parameters);
+
+void *_calculations(void *parameters);
+
 
 void *broadcast_location();
 
@@ -139,8 +154,7 @@ int main(void)
         
     }
 
-
-    // Will mostlikly never happen
+    // Will never happen
     close(sd);
 
     
@@ -164,6 +178,10 @@ void clear_client_struct(struct client *clientInfo)
     clientInfo->threadId = 0;                           //Thread Id
     clientInfo->sd =  0;                                //TCP-Socket descriptor
     strcpy(clientInfo->client_ip_addr, "0.0.0.0");      //Clients ip-address
+    clientInfo->cannonAngle = 0;                         
+    clientInfo->tankAngle = 0;
+    clientInfo->fire = 0;
+    clientInfo->speed = 1;
     clientInfo->free = 0;                               //Flag that indicates if the slot is free. 1 == taken 0 == free
 }
 
@@ -182,8 +200,6 @@ void server_debugger_print(struct client clientInfo, int place)
     printf("\n");
     printf("\n");
     printf("===========================================\n");
-    
-    
 }
 
 
@@ -194,7 +210,6 @@ void * debeugger_print_thread(void *parameters)
     struct client *clientInfo = (struct client *)parameters;
     for (;;)
     {
-        
         for (i = 0; i < MAX_PLAYERS ; i++)
         {
             server_debugger_print(clientInfo[i], i);
@@ -203,8 +218,6 @@ void * debeugger_print_thread(void *parameters)
         printf("///////////////////////////////////////////////////////////\n");
     }
 }
-
-
 
 void *client_handler_function(void *parameters)
 {
@@ -216,96 +229,73 @@ void *client_handler_function(void *parameters)
     struct stcInfo info;    //Server to client info
 
     pthread_t broadcastLocation;
-    pthread_t calculations;
+    pthread_t tankCalculations;
     pthread_t bulletCalculations = 0;
 
     
     struct client * clientInfo = (struct client*)parameters;
     
-    //Set start postion for clitent
-    clientInfo->xLocation = 0;
-    clientInfo->yLocation = 0;
-    clientInfo->fire = 0;
-
-    
-    
     printf("Connection from: %s\n", clientInfo->client_ip_addr);
-    
-    /*
-    sprintf(buffer, "%d", clientInfo->mySlot);
-    send(clientInfo->sd, buffer, sizeof(buffer), 0);
-    printf("Sending: %s\n", buffer);
-    */
     
     //Thread that sends the location of the clients position to all connected clients
     pthread_create( &broadcastLocation, NULL, broadcast_location, (clientInfo));
     //Thread that calculates the clients movement
-    pthread_create( &calculations, NULL, movement_calculations, (clientInfo));
+    pthread_create( &tankCalculations, NULL, tank_calculations, (clientInfo));
 
 
     //Recives the clients input and makes the appropriate changes
     while ( 0 < recv(clientInfo->sd, buffer, sizeof(buffer), 0))
     {
-        
-        
-     //buffer[sizeof(buffer)] = '\n';
         sscanf(buffer, "%d, %d, %c, %c",& commands.mouseX, &commands.mouseY, &commands.mouseInput,&commands.keyboardInput);
-        
-        //printf("X: %d Y: %d Mouse: %c Key: %c\n", commands.mouseX, commands.mouseY,commands.mouseInput,commands.keyboardInput);
-        
+                
         clientInfo->mouseX = commands.mouseX;
         clientInfo->mouseY = commands.mouseY;
         clientInfo->mouseInput = commands.mouseInput;
         
-        
         switch(commands.keyboardInput)
         {
             case 'W':
-                clientInfo->yVelocity = -1;
+                clientInfo->forward = TRUE;
                 break;
             case 'S':
-                clientInfo->yVelocity = +1;
+                clientInfo->backward = TRUE;
                 break;
             case 'A':
-                clientInfo->xVelocity = -1;
+                clientInfo->turnRight = TRUE;
                 break;
             case 'D':
-                clientInfo->xVelocity = +1;
+                clientInfo->turnLeft = TRUE;
                 break;
                 
             case 'w':
-                clientInfo->yVelocity += 1;
+                clientInfo->forward = FALSE;
                 break;
             case 's':
-                clientInfo->yVelocity -= 1;
+                clientInfo->backward = FALSE;
                 break;
             case 'a':
-                clientInfo->xVelocity += 1;
+                clientInfo->turnRight = FALSE;
                 break;
             case 'd':
-                clientInfo->xVelocity -= 1;
+                clientInfo->turnLeft = FALSE;
                 break;
-                
             default:
                 break;
          }
         
     
-        //THIS IS DANGEROUS CAN FUCK EWERYTHING!!!
         if (clientInfo->mouseInput == 'L' &&     clientInfo->fire == 0)
-    {
-        pthread_create( &bulletCalculations, NULL, bullet_movement_calc, (clientInfo));
-    }
+        {
+            pthread_create( &bulletCalculations, NULL, bullet_movement_calc, (clientInfo));
+        }
 
         
     }
     
     //If the clients quits or connection is lost cancel the broadcast thread
     pthread_cancel(broadcastLocation);
-    pthread_cancel(calculations);
+    pthread_cancel(tankCalculations);
     pthread_cancel(bulletCalculations);
-
-
 
     //Close sd
     close(clientInfo->sd);
@@ -318,48 +308,58 @@ void *client_handler_function(void *parameters)
     return NULL;
 }
 
-void *movement_calculations(void *parameters)
+void *tank_calculations(void *parameters)
 {
+    double tempAngle;
+    float tempX = 120, tempY = 850;
+    
     
     struct client * clientInfo = (struct client*)parameters;
 
     for (;;)
     {
-        
-        //fast fix for bugging controlls
-        if (clientInfo->xVelocity > 1)
+
+        if (clientInfo->turnLeft)
         {
-            clientInfo->xVelocity = 1;
+            clientInfo->tankAngle += 1;
         }
-        if (clientInfo->xVelocity < -1)
+        if (clientInfo->turnRight)
         {
-            clientInfo->xVelocity = -1;
-        }
-        if (clientInfo->yVelocity > 1)
-        {
-            clientInfo->yVelocity = 1;
-        }
-        if (clientInfo->yVelocity < -1)
-        {
-            clientInfo->yVelocity = -1;
+            clientInfo->tankAngle -= 1;
         }
         
-        
-        //Limits the client to the screen
-        clientInfo->xLocation += clientInfo->xVelocity;
-        
-        if (clientInfo->xLocation < 0 || clientInfo->xLocation+ HITBOX_WIDTH > 2400 )
+        if (clientInfo->tankAngle >= 360 )
         {
-            clientInfo->xLocation -= clientInfo->xVelocity;
+            clientInfo->tankAngle -= 360;
+        }
+        if (clientInfo->tankAngle <= -360 )
+        {
+            clientInfo->tankAngle += 360;
         }
         
-        clientInfo->yLocation += clientInfo->yVelocity;
-        
-        if (clientInfo->yLocation < 0 || clientInfo->yLocation + HITBOX_HIGHT > 1800 )
+        tempAngle = clientInfo->tankAngle*(M_PI/180);
+        if (clientInfo->forward)
         {
-            clientInfo->yLocation -= clientInfo->yVelocity;
+        
+            tempX += clientInfo->speed*cos(tempAngle);
+            tempY += clientInfo->speed*sin(tempAngle);
+            
+            
+        }
+        if (clientInfo->backward)
+        {
+            tempX -= clientInfo->speed*cos(tempAngle);
+            
+            tempY -= clientInfo->speed*sin(tempAngle);
         }
         
+        
+        clientInfo->xLocation = tempX;
+        clientInfo->yLocation = tempY;
+        
+        //Calculates the 
+        clientInfo->cannonAngle = (atan2(clientInfo->mouseY-300, clientInfo->mouseX-400))*(180/M_PI);
+
         //around 200 calcs every sec
         usleep(5000);
     }
@@ -375,84 +375,24 @@ void *bullet_movement_calc(void *parameters)
     int tempXLocation, tempYLocation;
     
     
-    
     struct client * clientInfo = (struct client*)parameters;
     
-    tempXLocation = clientInfo->xLocation + HITBOX_WIDTH/2;
-    tempYLocation = clientInfo->yLocation + HITBOX_HIGHT/2;
-
     clientInfo->fire = 1;
-        
+
+    tempXLocation = clientInfo->xLocation + HITBOX_WIDTH/2-7;
+    tempYLocation = clientInfo->yLocation + HITBOX_HIGHT/2-7;
+
     angle = (atan2(clientInfo->mouseY-300, clientInfo->mouseX-400));
     
-    printf("ANGLE IS %f\n", (float) angle*(180/3.1415));
-    
-    for (i = 0; i <= RANGE; i++)
+    for (i = 30; i <= RANGE+30; i++)
     {
         clientInfo->bulletX = tempXLocation+i*cos(angle);
         clientInfo->bulletY = tempYLocation+i*sin(angle);
         usleep(3000);
+        
+        clientInfo->fire++;
     }
     
-    
-    
-    
-    
-    /*
-    clientInfo->bulletX = clientInfo->xLocation + HITBOX_WIDTH/2;
-    clientInfo->bulletY = clientInfo->yLocation + HITBOX_HIGHT/2;
-    
-    printf("BULLET START X: %d Y %d\n", clientInfo->bulletX, clientInfo->bulletY);
-    
-    newX = RANGE*cos(angle) + clientInfo->bulletX;
-    newY = RANGE*sin(angle) + clientInfo->bulletY;
-
-    //dxdy = ballistic_angle(clientInfo->bulletX, clientInfo->bulletY, newX, newY);
-    //printf("DXDY: %f\n", dxdy);
-    
-    if (angle > -0.78 &&  angle < 0 || angle < 0.73 && angle > 0 || angle > 2.34 && angle < 3.14 || angle < -2.34 && angle > -3.14)
-    {
-        for (;;)
-        {
-            if (clientInfo->bulletX < newX)
-            {
-                clientInfo->bulletX += 1;
-                clientInfo->bulletY = -1*(clientInfo->bulletX/angle);
-            }
-            if (clientInfo->bulletX > newX)
-            {
-                clientInfo->bulletX -= 1;
-            }
-            
-            if (clientInfo->bulletX == newX)
-            {
-                break;
-            }
-            usleep(4000);
-        }
-    }
-    else
-    {
-        for (;;)
-        {
-            if (clientInfo->bulletY < newY)
-            {
-                clientInfo->bulletY += 1;
-            }
-            if (clientInfo->bulletY > newY)
-            {
-                clientInfo->bulletY -= 1;
-            }
-            
-            if (clientInfo->bulletY == newY)
-            {
-                break;
-            }
-            usleep(4000);
-        }
-    }
-
-     */
     clientInfo->fire = 0;
 
     return NULL;
@@ -475,7 +415,7 @@ void *broadcast_location(void *parameters)
     {
         
         //Formats the information for sending.
-        sprintf(buffer, "%d,%d,%d,%d,%d,%d,%d,%d", clientInfo->xLocation,clientInfo->yLocation, clientInfo->mySlot, clientInfo->mouseX, clientInfo->mouseY,clientInfo->fire, clientInfo->bulletX, clientInfo->bulletY);
+        sprintf(buffer, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", clientInfo->xLocation,clientInfo->yLocation, clientInfo->mySlot, clientInfo->mouseX, clientInfo->mouseY,clientInfo->fire, clientInfo->bulletX, clientInfo->bulletY, clientInfo->tankAngle, clientInfo->cannonAngle);
         
         //sprintf(buffer, "200,300,0");
         
@@ -496,7 +436,7 @@ void *broadcast_location(void *parameters)
         }
         
         //waits to not overload client and the network
-        usleep(35000);
+        usleep(3000);
     }
     
 }

@@ -18,6 +18,8 @@ struct stcInfo
     int mouseX, mouseY;     //where the players mouse is pointing
     int fire;               //if the player is firing
     int bulletX, bulletY;
+    int tankAngle;
+    int cannonAngle;
 };
 
 //Client to server commands on how to move the controlled unit sent via tcp
