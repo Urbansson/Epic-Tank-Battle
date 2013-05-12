@@ -1,5 +1,7 @@
 //sdl Includes
 #include "SDL/SDL.h"
+#include "SDL/SDL_ttf.h"
+
 
 //Standard includes
 #include <stdio.h>
@@ -20,12 +22,15 @@
 #include "calculations.h"
 
 
-
+#define MAX_PLAYERS 6
 #define FPS 60
 
 struct udpData udpInfo;
 
 void * recive_udp_data(void * parameters);
+
+int redPoints;
+int bluePoints;
 
 int main(int argc, char *argv[])
 {
@@ -37,8 +42,10 @@ int main(int argc, char *argv[])
     
     //SDL vars
     SDL_Event event;
+    
     //Screen
     SDL_Surface* screen = NULL;
+    
     //Tanks
     SDL_Surface* blueTank = NULL;
     SDL_Surface* blueCannon = NULL;
@@ -47,6 +54,7 @@ int main(int argc, char *argv[])
     
     //Bullet
     SDL_Surface* bullet = NULL;
+    
     //WorldMap
     SDL_Surface* worldMap = NULL;
     
@@ -54,6 +62,22 @@ int main(int argc, char *argv[])
     SDL_Surface* rotatedTank[6] = {NULL,NULL,NULL,NULL,NULL,NULL};
     SDL_Surface* rotatedCannon[6] = {NULL,NULL,NULL,NULL,NULL,NULL};
     SDL_Surface* rotatedBullet[6] = {NULL,NULL,NULL,NULL,NULL,NULL};
+    
+    SDL_Rect Tankoffset[6] = {400,300,0,0};
+    SDL_Rect Cannonoffset[6] = {400,300,0,0};
+
+    //UserInterface vars
+    SDL_Surface* UIhealth;
+    SDL_Surface* UIreload;
+    SDL_Surface* UIredPoints;
+    SDL_Surface* UIbluePoints;
+    
+    TTF_Font *font = NULL;
+    TTF_Font *reloadFont = NULL;
+    
+    SDL_Color textColor = { 255, 255, 255 };
+    char textBuffer[32];
+    char reload[32] = "FIRE: ";
     
     
     //Thread vars
@@ -70,8 +94,17 @@ int main(int argc, char *argv[])
     int oldTankAngle[6] = {1000,1000,1000,1000,1000,1000};
 
 
+    //Other vars
+    int i;
     
-
+    for (i = 0; i < MAX_PLAYERS; i++)
+    {
+        
+        player[i].slot = -1;
+        
+    }
+    
+    
     //inits Sdl and opens the screen
     screen = init_sdl();
     
@@ -90,13 +123,14 @@ int main(int argc, char *argv[])
     worldMap = load_image( "./images/worldMap.bmp" );
     bullet = load_image( "./images/bullet.bmp" );
 
-    
+    //Load the fonts
+    font = TTF_OpenFont( "./fonts/Army.ttf", 24 );
+    reloadFont = TTF_OpenFont( "./fonts/Armyfat.ttf", 24 );
     
     //Moves udp info to global var
     udpInfo.udpSd = udpSd;
     strcpy(udpInfo.serverIp, argv[1]);
 
-    
     //Recives the first information from the server
     recv(tcpSd, buffer, sizeof(buffer), 0);
     myId = atoi(buffer);
@@ -131,41 +165,37 @@ int main(int argc, char *argv[])
         //Draws WorldMAps
         draw_map(player[myId].xCord,player[myId].yCord, worldMap, screen);
 
-        /*
-        //Draws Tank body centered
-         SDL_Rect tempoffset = {400-32,300-23,0,0};
         
-         SDL_BlitSurface(blueTank, NULL, screen, &tempoffset);
-        //apply_surface(400-(32),300-(23), blueTank, screen);
-          */
         
+        //ROTATES AND DISPLAYES YOUR TANK+++++++++++++++++++++++++++++
         if (player[myId].tankAngle != oldTankAngle[myId])
         {
             SDL_FreeSurface( rotatedTank[myId] );
-
-            rotatedTank[myId] = rotozoomSurface(blueTank,player[myId].tankAngle,1.0,0);
+            if (player[myId].team == 1)
+                rotatedTank[myId] = rotozoomSurface(blueTank,player[myId].tankAngle,1.0,0);
+            else
+                rotatedTank[myId] = rotozoomSurface(redTank,player[myId].tankAngle,1.0,0);
             oldTankAngle[myId] = player[myId].cannonAngle;
         }
         
         SDL_Rect SelfTankoffset = {400,300,0,0};
         
-        //printf("FUNKAR HÄR\n");
-
         SelfTankoffset.x -= (rotatedTank[myId]->w/2);
         SelfTankoffset.y -= (rotatedTank[myId]->h/2);
         
-        //printf("FUNKAR OCH HÄR\n");
 
         SDL_BlitSurface(rotatedTank[myId], NULL, screen, &SelfTankoffset);
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
-
-        
-        
-        //ROTATES YOUR CANNON++++++++++++++++++++++++++++++        
+         
+        //ROTATES AND DISPLAYS YOUR CANNON++++++++++++++++++++++++++++++        
         if (player[myId].cannonAngle != oldCannonAngle[myId])
         {            
             SDL_FreeSurface( rotatedCannon[myId] );
-            rotatedCannon[myId] = rotozoomSurface(blueCannon,player[myId].cannonAngle,1.0,0);
+            if (player[myId].team == 1)
+                rotatedCannon[myId] = rotozoomSurface(blueCannon,player[myId].cannonAngle,1.0,0);
+            else
+                rotatedCannon[myId] = rotozoomSurface(redCannon,player[myId].cannonAngle,1.0,0);
             oldCannonAngle[myId] = player[myId].cannonAngle;
         }
         
@@ -176,28 +206,142 @@ int main(int argc, char *argv[])
         
         SDL_BlitSurface(rotatedCannon[myId], NULL, screen, &SelfCannonoffset);
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    
         
         
-        //DISPLAYS YOUR BULLET++++++++++++++++++++++++++++++
-        if (player[myId].fire > 0)
+        //ROTATES AND DISPLAYES OTHER TANKS+++++++++++++++++++++++++++++
+        for (i = 0; i < MAX_PLAYERS; i++)
         {
-            if (bulletAngle[myId] == 0)
+            if (player[i].slot == myId)
             {
-                SDL_FreeSurface( rotatedBullet[myId] );
-                rotatedBullet[myId] = rotozoomSurface(bullet,player[myId].cannonAngle,1.0,0);
+                continue;
             }
             
-            draw_bullet(&player[myId], &camera, rotatedBullet[myId], screen );
-            bulletAngle[myId] = 1;
+            if (player[i].slot > -1)
+            {
+             
+                if (player[i].tankAngle != oldTankAngle[i])
+                {
+                    SDL_FreeSurface( rotatedTank[i] );
+                    if (player[i].team == 1)
+                        rotatedTank[i] = rotozoomSurface(blueTank,player[i].tankAngle,1.0,0);
+                    else
+                        rotatedTank[i] = rotozoomSurface(redTank,player[i].tankAngle,1.0,0);
+                    oldTankAngle[i] = player[i].cannonAngle;
+                }
+                
+                Tankoffset[i].x = player[i].xCord + camera.xCord + 400;
+                Tankoffset[i].y = player[i].yCord + camera.yCord + 300;
+                
+                Tankoffset[i].x -= (rotatedTank[i]->w/2);
+                Tankoffset[i].y -= (rotatedTank[i]->h/2);
+                
+                SDL_BlitSurface(rotatedTank[i], NULL, screen, &Tankoffset[i]);
+            }
         }
-        
-        if (player[myId].fire == 0)
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+        //ROTATES AND DISPLAYS OTHER CANNONS++++++++++++++++++++++++++++++
+
+        for (i = 0; i < MAX_PLAYERS; i++)
         {
-            bulletAngle[myId]=0;
+            if (player[i].slot == myId || player[i].dead == 1)
+            {
+                continue;
+            }
+            
+            if (player[i].slot > -1)
+            {
+                
+                if (player[i].cannonAngle != oldCannonAngle[i])
+                {
+                    SDL_FreeSurface( rotatedCannon[i] );
+                    if (player[i].team == 1)
+                        rotatedCannon[i] = rotozoomSurface(blueCannon,player[i].cannonAngle,1.0,0);
+                    else
+                        rotatedCannon[i] = rotozoomSurface(redCannon,player[i].cannonAngle,1.0,0);
+                    oldCannonAngle[i] = player[i].cannonAngle;
+                }
+                
+                Cannonoffset[i].x = player[i].xCord + camera.xCord + 400;
+                Cannonoffset[i].y = player[i].yCord + camera.yCord + 300;
+                
+                Cannonoffset[i].x -= (rotatedCannon[i]->w/2);
+                Cannonoffset[i].y -= (rotatedCannon[i]->h/2);
+                
+                SDL_BlitSurface(rotatedCannon[i], NULL, screen, &Cannonoffset[i]);
+                
+            }
+        }
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    
+        //DRAWS ALL THE BULLETS ON THE SCREEEN+++++++++++++++++++++++++++
+        for (i = 0; i < MAX_PLAYERS; i++)
+        {
+            if (player[i].slot > -1)
+            {
+                if (player[i].fire > 0)
+                {
+                    if (bulletAngle[i] == 0)
+                    {
+                        SDL_FreeSurface( rotatedBullet[i] );
+                        rotatedBullet[i] = rotozoomSurface(bullet,player[i].cannonAngle,1.0,0);
+                    }
+                    draw_bullet(&player[i], &camera, rotatedBullet[i], screen );
+                    bulletAngle[i] = 1;
+                }
+                
+                if (player[i].fire == 0)
+                {
+                    bulletAngle[i]=0;
+                }
+            }
         }
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         
+        //DRAWS THE USER INTERFACE ON SCREEN+++++++++++++++++++++++++++++
+        
+        textColor.r=0;
+        textColor.g=0;
+        textColor.b=255;
+        sprintf(textBuffer, "BLUE POINTS: %d", bluePoints);
+        UIbluePoints = TTF_RenderText_Solid( font, textBuffer, textColor );
+        draw_UI( 10, 10, UIbluePoints, screen);
+        
+        textColor.r=255;
+        textColor.g=0;
+        textColor.b=0;
+        sprintf(textBuffer, "BLUE POINTS: %d", redPoints);
+        UIredPoints = TTF_RenderText_Solid( font, textBuffer, textColor );
+        draw_UI( 600, 10, UIredPoints, screen);
+        
+        textColor.r=255;
+        textColor.g=0;
+        textColor.b=0;
+        sprintf(textBuffer, "HP: %d", player[myId].healthPoints);
+        UIhealth = TTF_RenderText_Solid( font, textBuffer, textColor );
+        draw_UI( 20, 570, UIhealth, screen);
+        
+        
+        textColor.r=255;
+        textColor.g=0;
+        textColor.b=0;
+        if (player[myId].fire == 0)
+        {
+            strcpy(reload, "FIRE: READY");
+            UIreload = TTF_RenderText_Solid( font, reload, textColor );
+        }
+        else
+        {
+            strcpy(reload, "FIRE: RELOADING");
+            UIreload = TTF_RenderText_Solid( font, reload, textColor );
+        
+        }
+        draw_UI( 580, 570, UIreload, screen);
+
+
         //Update Screen
         SDL_Flip( screen );
         
@@ -218,23 +362,28 @@ int main(int argc, char *argv[])
 void * recive_udp_data(void * parameters)
 {
     
-    char buffer[64];
+    char buffer[128];
     struct stcInfo moveInfo;
     
     struct playerInfo * player = (struct playerInfo*) parameters;
     
     while (1)
     {
+        
         recvfrom(udpInfo.udpSd, buffer, sizeof(buffer), 0, udpInfo.serverIp, sizeof(udpInfo.serverIp));
         
-        printf("recived from server: %s \n", buffer);
+        //printf("recived from server: %s \n", buffer);
         
-        sscanf(buffer, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", &moveInfo.x, &moveInfo.y , &moveInfo.player, &moveInfo.mouseX, &moveInfo.mouseY,&moveInfo.fire, &moveInfo.bulletX, &moveInfo.bulletY, &moveInfo.tankAngle, &moveInfo.cannonAngle);
+        sscanf(buffer, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", &moveInfo.team,&moveInfo.x, &moveInfo.y , &moveInfo.player, &moveInfo.mouseX, &moveInfo.mouseY,&moveInfo.fire, &moveInfo.bulletX, &moveInfo.bulletY, &moveInfo.tankAngle, &moveInfo.cannonAngle, &moveInfo.dead, &moveInfo.healthPoints, &moveInfo.redPoints, &moveInfo.bluePoints);
+        
+        //printf("RECIVED: %s\n", buffer);
         
         
         //Saves the incoming data in the players struct.
         player[moveInfo.player].slot = moveInfo.player;
         
+        player[moveInfo.player].team = moveInfo.team;
+
         player[moveInfo.player].xCord = moveInfo.x;
         player[moveInfo.player].yCord = moveInfo.y;
         
@@ -247,6 +396,12 @@ void * recive_udp_data(void * parameters)
         
         player[moveInfo.player].tankAngle = -1*moveInfo.tankAngle;
         player[moveInfo.player].cannonAngle = -1*moveInfo.cannonAngle;
+        
+        player[moveInfo.player].healthPoints = moveInfo.healthPoints;
+        player[moveInfo.player].dead = moveInfo.dead;
+        
+        redPoints = moveInfo.redPoints;
+        bluePoints = moveInfo.bluePoints;
         
         sleep(0);
     }

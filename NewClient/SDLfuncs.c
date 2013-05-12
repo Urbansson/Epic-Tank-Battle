@@ -174,16 +174,21 @@ void draw_bullet(struct playerInfo * player, struct cameraInfo * camera, SDL_Sur
     offset.x = player->bulletX + camera->xCord+ 400-HITBOX_WIDTH/2;
     offset.y = player->bulletY + camera->yCord+300-HITBOX_HIGHT/2;
     
-    //offset.x = player->bulletX ;
-    //offset.y = player->bulletY ;
     //Blit the surface
     SDL_BlitSurface( source, NULL, destination, &offset );
 }
 
-
-SDL_Surface * rotate_image( SDL_Surface* image, int angle )
+void draw_UI( int x, int y, SDL_Surface* text, SDL_Surface* screen)
 {
-    return NULL;
+    SDL_Rect offset;
+    
+    //Get offsets
+    offset.x = x;
+    offset.y = y;
+    
+    //Blit
+    SDL_BlitSurface( text, NULL, screen, &offset );
+
 }
 
 

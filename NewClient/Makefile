@@ -1,7 +1,7 @@
 All: Client
 
 Client:   install_client.o  install_init.o install_audio.o install_clientinternetfuncs.o    install_SDLfuncs.o	install_timers.o install_calculations.o install_rotozoom.o
-	gcc install_client.o install_init.o install_audio.o install_clientinternetfuncs.o install_SDLfuncs.o install_timers.o install_calculations.o install_rotozoom.o -o Client -ldl -lm -lSDL -lSDL_mixer -lSDL_image -lpthread -O3
+	gcc install_client.o install_init.o install_audio.o install_clientinternetfuncs.o install_SDLfuncs.o install_timers.o install_calculations.o install_rotozoom.o -o Client -ldl -lm -lSDL -lSDL_mixer -lSDL_image -lSDL_ttf -lpthread -O3
  
 install_client.o:   Client.c 
 	gcc -c Client.c -o install_client.o

@@ -20,6 +20,10 @@ struct playerInfo
     int bulletX, bulletY;
     int tankAngle;
     int cannonAngle;
+    
+    int team;
+    int healthPoints;
+    int dead;
 };
 
 struct cameraInfo
@@ -37,7 +41,7 @@ void draw_map( int x, int y, SDL_Surface* source, SDL_Surface* destination );
 
 void draw_bullet(struct playerInfo * player, struct cameraInfo * camera, SDL_Surface* source, SDL_Surface* destination);
 
-SDL_Surface * rotate_image( SDL_Surface* image, int angle );
+void draw_UI( int x, int y, SDL_Surface* text, SDL_Surface* screen);
 
 
 

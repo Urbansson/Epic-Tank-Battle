@@ -13,6 +13,8 @@
 struct stcInfo
 {
     char destination[20];   //The destination ip for the information
+    
+    int team;
     int x, y;               //Where the player is
     int player;             //Who the players is
     int mouseX, mouseY;     //where the players mouse is pointing
@@ -20,6 +22,11 @@ struct stcInfo
     int bulletX, bulletY;
     int tankAngle;
     int cannonAngle;
+    
+    int healthPoints;
+    int dead;
+    int bluePoints, redPoints;
+
 };
 
 //Client to server commands on how to move the controlled unit sent via tcp

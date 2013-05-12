@@ -1,7 +1,7 @@
 All: Server 
 
-Server: install_server.o install_internetFuncs.o install_calculations.o
-	gcc install_server.o install_internetFuncs.o install_calculations.o -o Server -lpthread -lm  
+Server: install_server.o install_internetfuncs.o install_calculations.o install_collision.o install_clientthreads.o
+	gcc install_server.o install_internetfuncs.o install_calculations.o install_collision.o install_clientthreads.o -o Server -lpthread -lm  
     
 install_calculations.o: calculations.c calculations.h
 	gcc -c calculations.c -o install_calculations.o   
@@ -9,8 +9,14 @@ install_calculations.o: calculations.c calculations.h
 install_server.o:   server.c 
 	gcc -c server.c -o install_server.o
     
-install_internetFuncs.o: internetFuncs.h internetFuncs.c
+install_internetfuncs.o: internetFuncs.h internetFuncs.c
 	gcc -c	internetFuncs.c	 -o install_internetfuncs.o
+    
+install_collision.o: collision.h collision.c
+	gcc -c	collision.c	 -o install_collision.o
+    
+install_clientthreads.o: clientThreads.h clientThreads.c
+	gcc -c	clientThreads.c	 -o install_clientthreads.o
 
 clean:
 	rm *.o

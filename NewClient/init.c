@@ -2,6 +2,8 @@
 #define _INIT_C
 
 #include "SDL/SDL.h"
+#include "SDL/SDL_ttf.h"
+
 #include <stdio.h>
 
 #include "init.h"
@@ -31,6 +33,12 @@ SDL_Surface *init_sdl()
         printf("Could not open audio: %s\n", Mix_GetError());
         
         exit(1);
+    }
+    
+    //Initialize SDL_ttf
+    if( TTF_Init() == -1 )
+    {
+        return FALSE;
     }
     
     load_soundfiles();    

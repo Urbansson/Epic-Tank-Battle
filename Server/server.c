@@ -10,9 +10,11 @@
 
 #include "internetFuncs.h"
 #include "calculations.h"
-
+#include "collision.h"
 
 #include "protocol.h"
+#include "clientStruct.h"
+#include "clientThreads.h"
 
 #define MAX_PLAYERS 6
 
@@ -23,43 +25,10 @@
 #define TRUE 1
 #define FALSE 0
 
-struct client
-{
-    pthread_t threadId;         //Thread Id
-    int mySlot;                 //My Slot on the server
-    int sd;                     //TCP-Socket descriptor
-    char client_ip_addr[20];    //Clients ip-address
-    int free;                   //Flag that indicates if the slot is free. 1 == taken 0 == free
-    
-    int xLocation;
-    int yLocation;
-    
-    int forward;
-    int backward;
-    int turnLeft;
-    int turnRight;
 
-    int tankAngle;
-    int cannonAngle;
-    
-    int mouseX;
-    int mouseY;
-    char mouseInput;
-    
-    int fire; // If We fire or not
-    int bulletX;
-    int bulletY;
-    int bulletHit;
-    
-    int speed;
-    int collision;
-};
-
-struct udp_info udpCliInfo[MAX_PLAYERS];
+char mapArray[2400][1800];
 
 void clear_client_struct(struct client *clientInfo);
-
-void *client_handler_function(void *parameters);
 
 void server_debugger_print(struct client clientInfo, int place);
 
@@ -67,34 +36,28 @@ void * debeugger_print_thread(void *parameters);
 
 int find_free_slot(struct client clientInfo[], int n);
 
-void *tank_calculations(void *parameters);
+int find_team(struct client clientInfo[], int n);
 
-void *bullet_movement_calc(void *parameters);
+void * bullet_hit_thread(void *parameters);
 
-void *_calculations(void *parameters);
-
-
-void *broadcast_location();
-
+void load_map_collision_array();
 
 int main(void)
 {
-    
     int sd, newSd;              //Socket descriptors sd is the one main listens on newSd is the one clients gets.
     struct sockaddr_in cliAddr; //Information about the client
     socklen_t cliLen;           //
-    char buffer[5];
+    char buffer[32];
 
     pthread_t server_db_print;  //Debug print thread information
-    
+    pthread_t bullet_hit;
     struct client clientInfo[MAX_PLAYERS];  // Where all necessary information about the client is stored
     
     int clientSlot;             // Stores in slot the new connection is going to get 
     
     int i;
     
-    //char buffer[128];
-    
+    //load_map_collision_array();
     
     // Init tcp
     sd = tcp_init();
@@ -107,16 +70,18 @@ int main(void)
     for (i = 0; i < MAX_PLAYERS; i++)
     {
         clear_client_struct(&clientInfo[i]);
-//        udpCliInfo[1].udpsocksd = -1;
     }
-    
+    redpoints = 0;
+    bluepoints = 0;
     
     //Starts the debug print thread
     //pthread_create(&server_db_print,NULL,debeugger_print_thread,clientInfo);
+    
+    pthread_create(&bullet_hit,NULL,bullet_hit_thread,clientInfo);
 
+    
     while (1)
     {
-    
         cliLen = sizeof(cliAddr);
         newSd = accept(sd, (struct sockaddr *) &cliAddr, &cliLen);
         
@@ -136,30 +101,83 @@ int main(void)
             continue;     // we have no more space for it. Then goto beginning of loop.
         }
         
-        sprintf(buffer, "%d", clientSlot);
-        send(newSd, buffer, sizeof(buffer), 0);
-
-        
         clientInfo[clientSlot].free = 1;            // Sets the client slot so it is taken
         clientInfo[clientSlot].sd = newSd;          // Gives the slot the socket descriptor
         clientInfo[clientSlot].mySlot = clientSlot; // Gives the Slot number 
-                
+        clientInfo[clientSlot].team = find_team(clientInfo, MAX_PLAYERS);
+        
         // Gets the clients ip address and stores it
         inet_ntop(cliAddr.sin_family, &cliAddr.sin_addr, clientInfo[clientSlot].client_ip_addr, sizeof (clientInfo[clientSlot].client_ip_addr));
         
-            
-        //Main thread for the connected client, Main programm will serv new connections
-        pthread_create( &clientInfo[clientSlot].threadId, NULL, client_handler_function, &(clientInfo[clientSlot]));
-
+        sprintf(buffer, "%d", clientSlot);
+        send(newSd, buffer, sizeof(buffer), 0);
         
+        //Main thread for the connected client, Main programm will serv new connections
+        pthread_create( &clientInfo[clientSlot].threadId, NULL, client_handler_function, &(clientInfo[clientSlot]));        
     }
 
+    //This will never happen unless we quit the programm
+    
+     pthread_cancel(server_db_print);
+    pthread_cancel(bullet_hit);
     // Will never happen
     close(sd);
 
-    
     return 0;
 }
+
+void load_map_collision_array()
+{
+    
+    printf("LADDAR Array\n");
+    
+    FILE *file;
+    
+    file = fopen("test", "rb");
+    
+    if (!file)
+    {
+        printf("Unable to open file\n");
+    }
+    else
+    {
+        fread(mapArray, sizeof(mapArray), 1, file);
+    }
+    
+    fclose(file);
+    
+   printf("mapArray[1][1] = %c\n", mapArray[1][1]);
+
+}
+
+
+void * bullet_hit_thread(void *parameters)
+{
+    int i, k;    
+    struct client *clientInfo = (struct client *)parameters;
+
+    while (TRUE)
+    {
+        for (i = 0; i < MAX_PLAYERS; i++)
+        {
+            for (k = 0; k < MAX_PLAYERS; k++)
+            {
+                if (clientInfo[i].mySlot > -1  && clientInfo[k].mySlot > -1 && i != k && clientInfo[i].bulletHit == 0)
+                {                    
+                    if (clientInfo[i].bulletX <= clientInfo[k].xLocation + 64 && clientInfo[i].bulletX + 10 >= clientInfo[k].xLocation)
+                    {
+                        if (clientInfo[i].bulletY <= clientInfo[k].yLocation + 45 && clientInfo[i].bulletY + 10 >= clientInfo[k].yLocation)
+                        {
+                            clientInfo[i].bulletHit = 1;
+                            clientInfo[k].bulletHitMe = 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 
 int find_free_slot(struct client clientInfo[], int n)
@@ -172,18 +190,71 @@ int find_free_slot(struct client clientInfo[], int n)
 }
 
 
+int find_team(struct client clientInfo[], int n)
+{
+    int i;
+    int red = 0, blue = 0;
+    
+    for(i=0;i<n;i++)
+    {
+        if(clientInfo[i].team == 1)
+            blue++;
+        
+        if(clientInfo[i].team == 2)
+            red++;
+    }
+        
+    if (blue < red)
+        return 1;
+    
+    if (blue > red)
+        return 2;
+    
+    return 1;
+}
+
+
 void clear_client_struct(struct client *clientInfo)
 {
-    clientInfo->mySlot = -1;                            //My Slot on the server
-    clientInfo->threadId = 0;                           //Thread Id
-    clientInfo->sd =  0;                                //TCP-Socket descriptor
+    clientInfo->mySlot = -1;                 //My Slot on the server
+    clientInfo->sd = 0;                     //TCP-Socket descriptor
     strcpy(clientInfo->client_ip_addr, "0.0.0.0");      //Clients ip-address
-    clientInfo->cannonAngle = 0;                         
-    clientInfo->tankAngle = 0;
-    clientInfo->fire = 0;
-    clientInfo->speed = 1;
-    clientInfo->free = 0;                               //Flag that indicates if the slot is free. 1 == taken 0 == free
+    
+    clientInfo->team = 0;                   //Indicates what team the client are in;
+    
+    clientInfo->xLocation = 0;              //Where the client are located on the x-axis
+    clientInfo->yLocation = 0;              //Where the client are located on the y-axis
+    
+    clientInfo->forward = 0;                //if the client are moving forward
+    clientInfo->backward = 0;               //if the client are moving backwards
+    clientInfo->turnLeft = 0;               //if the client are turning left
+    clientInfo->turnRight = 0;              //if the client are turning right
+    
+    clientInfo->tankAngle = 0;              //The angle of the tank
+    clientInfo->cannonAngle = 0;            //The angle of the cannom
+    
+    clientInfo->mouseX = 0;                 //Mouse x pos
+    clientInfo->mouseY = 0;                 //Mouse y pos
+    clientInfo->mouseInput = 0;            //What button on the mouse the client is pressing
+    
+    clientInfo->fire = 0;                   // If the client fire or not
+    clientInfo->bulletX = -1000;                //Bullet X
+    clientInfo->bulletY = -1000;                //Bullet Y
+    clientInfo->bulletHit = 0;              //IF the bullet hit something
+    
+    clientInfo->speed = 1;                  //THe tanks speed
+    clientInfo->tankCollision = 0;          // Zero if no collision if collision the one you are col
+    
+    clientInfo->healthPoints = 100;           //Health of the tank 100 max 0 dead
+    clientInfo->dead = 0;
+    
+    clientInfo->free = 0;                   //Flag that indicates if the slot is free. 1 == taken 0 == free
 }
+
+
+
+
+
 
 void server_debugger_print(struct client clientInfo, int place)
 {
@@ -218,230 +289,6 @@ void * debeugger_print_thread(void *parameters)
         printf("///////////////////////////////////////////////////////////\n");
     }
 }
-
-void *client_handler_function(void *parameters)
-{
-    
-    char buffer[64], temp[10];
-    int pos, devider, number = 0;
-    struct ctsCommands commands; //client to server commands
-    
-    struct stcInfo info;    //Server to client info
-
-    pthread_t broadcastLocation;
-    pthread_t tankCalculations;
-    pthread_t bulletCalculations = 0;
-
-    
-    struct client * clientInfo = (struct client*)parameters;
-    
-    printf("Connection from: %s\n", clientInfo->client_ip_addr);
-    
-    //Thread that sends the location of the clients position to all connected clients
-    pthread_create( &broadcastLocation, NULL, broadcast_location, (clientInfo));
-    //Thread that calculates the clients movement
-    pthread_create( &tankCalculations, NULL, tank_calculations, (clientInfo));
-
-
-    //Recives the clients input and makes the appropriate changes
-    while ( 0 < recv(clientInfo->sd, buffer, sizeof(buffer), 0))
-    {
-        sscanf(buffer, "%d, %d, %c, %c",& commands.mouseX, &commands.mouseY, &commands.mouseInput,&commands.keyboardInput);
-                
-        clientInfo->mouseX = commands.mouseX;
-        clientInfo->mouseY = commands.mouseY;
-        clientInfo->mouseInput = commands.mouseInput;
-        
-        switch(commands.keyboardInput)
-        {
-            case 'W':
-                clientInfo->forward = TRUE;
-                break;
-            case 'S':
-                clientInfo->backward = TRUE;
-                break;
-            case 'A':
-                clientInfo->turnRight = TRUE;
-                break;
-            case 'D':
-                clientInfo->turnLeft = TRUE;
-                break;
-                
-            case 'w':
-                clientInfo->forward = FALSE;
-                break;
-            case 's':
-                clientInfo->backward = FALSE;
-                break;
-            case 'a':
-                clientInfo->turnRight = FALSE;
-                break;
-            case 'd':
-                clientInfo->turnLeft = FALSE;
-                break;
-            default:
-                break;
-         }
-        
-    
-        if (clientInfo->mouseInput == 'L' &&     clientInfo->fire == 0)
-        {
-            pthread_create( &bulletCalculations, NULL, bullet_movement_calc, (clientInfo));
-        }
-
-        
-    }
-    
-    //If the clients quits or connection is lost cancel the broadcast thread
-    pthread_cancel(broadcastLocation);
-    pthread_cancel(tankCalculations);
-    pthread_cancel(bulletCalculations);
-
-    //Close sd
-    close(clientInfo->sd);
-    
-    //Clears upd socket so server dont spend time sending to nothing
-    udpCliInfo[clientInfo->mySlot].udpsocksd = -1;
-    //Clear clint information strcut so a new connection can take it
-    clear_client_struct(&clientInfo[clientInfo->mySlot]);
-    
-    return NULL;
-}
-
-void *tank_calculations(void *parameters)
-{
-    double tempAngle;
-    float tempX = 120, tempY = 850;
-    
-    
-    struct client * clientInfo = (struct client*)parameters;
-
-    for (;;)
-    {
-
-        if (clientInfo->turnLeft)
-        {
-            clientInfo->tankAngle += 1;
-        }
-        if (clientInfo->turnRight)
-        {
-            clientInfo->tankAngle -= 1;
-        }
-        
-        if (clientInfo->tankAngle >= 360 )
-        {
-            clientInfo->tankAngle -= 360;
-        }
-        if (clientInfo->tankAngle <= -360 )
-        {
-            clientInfo->tankAngle += 360;
-        }
-        
-        tempAngle = clientInfo->tankAngle*(M_PI/180);
-        if (clientInfo->forward)
-        {
-        
-            tempX += clientInfo->speed*cos(tempAngle);
-            tempY += clientInfo->speed*sin(tempAngle);
-            
-            
-        }
-        if (clientInfo->backward)
-        {
-            tempX -= clientInfo->speed*cos(tempAngle);
-            
-            tempY -= clientInfo->speed*sin(tempAngle);
-        }
-        
-        
-        clientInfo->xLocation = tempX;
-        clientInfo->yLocation = tempY;
-        
-        //Calculates the 
-        clientInfo->cannonAngle = (atan2(clientInfo->mouseY-300, clientInfo->mouseX-400))*(180/M_PI);
-
-        //around 200 calcs every sec
-        usleep(5000);
-    }
-
-}
-
-void *bullet_movement_calc(void *parameters)
-{
-    double angle;
-    int newX, newY;
-    float dxdy;
-    int i;
-    int tempXLocation, tempYLocation;
-    
-    
-    struct client * clientInfo = (struct client*)parameters;
-    
-    clientInfo->fire = 1;
-
-    tempXLocation = clientInfo->xLocation + HITBOX_WIDTH/2-7;
-    tempYLocation = clientInfo->yLocation + HITBOX_HIGHT/2-7;
-
-    angle = (atan2(clientInfo->mouseY-300, clientInfo->mouseX-400));
-    
-    for (i = 30; i <= RANGE+30; i++)
-    {
-        clientInfo->bulletX = tempXLocation+i*cos(angle);
-        clientInfo->bulletY = tempYLocation+i*sin(angle);
-        usleep(3000);
-        
-        clientInfo->fire++;
-    }
-    
-    clientInfo->fire = 0;
-
-    return NULL;
-
-
-}
-
-
-void *broadcast_location(void *parameters)
-{
-    int i;
-    char buffer[128] = "\0";
-
-
-    struct client * clientInfo = (struct client*)parameters;
-
-    udp_init(clientInfo->client_ip_addr, "6000", &udpCliInfo[clientInfo->mySlot]);
-
-    while (1)
-    {
-        
-        //Formats the information for sending.
-        sprintf(buffer, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", clientInfo->xLocation,clientInfo->yLocation, clientInfo->mySlot, clientInfo->mouseX, clientInfo->mouseY,clientInfo->fire, clientInfo->bulletX, clientInfo->bulletY, clientInfo->tankAngle, clientInfo->cannonAngle);
-        
-        //sprintf(buffer, "200,300,0");
-        
-        //printf("Sending: %s\n", buffer);
-        
-        //Sends to all Players
-        for (i = 0; i < MAX_PLAYERS; i++)
-        {
-            //Skips slot if no connection
-            if( udpCliInfo[i].udpsocksd > 0 )
-            {
-                if(sendto(udpCliInfo[i].udpsocksd, buffer, strlen(buffer)+1, 0, udpCliInfo[i].p->ai_addr, udpCliInfo[i].p->ai_addrlen) == -1)
-                {
-                    perror("Send: \n");
-                    exit(1);
-                }
-            }
-        }
-        
-        //waits to not overload client and the network
-        usleep(3000);
-    }
-    
-}
-
-
 
 
 
