@@ -25,9 +25,6 @@
 #define TRUE 1
 #define FALSE 0
 
-
-char mapArray[2400][1800];
-
 void clear_client_struct(struct client *clientInfo);
 
 void server_debugger_print(struct client clientInfo, int place);
@@ -38,7 +35,7 @@ int find_free_slot(struct client clientInfo[], int n);
 
 int find_team(struct client clientInfo[], int n);
 
-void * bullet_hit_thread(void *parameters);
+//void * bullet_hit_thread(void *parameters);
 
 void load_map_collision_array();
 
@@ -104,7 +101,7 @@ int main(void)
         clientInfo[clientSlot].free = 1;            // Sets the client slot so it is taken
         clientInfo[clientSlot].sd = newSd;          // Gives the slot the socket descriptor
         clientInfo[clientSlot].mySlot = clientSlot; // Gives the Slot number 
-        clientInfo[clientSlot].team = find_team(clientInfo, MAX_PLAYERS);
+        clientInfo[clientSlot].team = find_team(clientInfo, MAX_PLAYERS);  //Finds a team and givs in to the client
         
         // Gets the clients ip address and stores it
         inet_ntop(cliAddr.sin_family, &cliAddr.sin_addr, clientInfo[clientSlot].client_ip_addr, sizeof (clientInfo[clientSlot].client_ip_addr));
@@ -112,13 +109,14 @@ int main(void)
         sprintf(buffer, "%d", clientSlot);
         send(newSd, buffer, sizeof(buffer), 0);
         
-        //Main thread for the connected client, Main programm will serv new connections
+        //Main thread for the connected client, Main programm will continue serv new connections
         pthread_create( &clientInfo[clientSlot].threadId, NULL, client_handler_function, &(clientInfo[clientSlot]));        
     }
 
     //This will never happen unless we quit the programm
     
-     pthread_cancel(server_db_print);
+    
+    pthread_cancel(server_db_print);
     pthread_cancel(bullet_hit);
     // Will never happen
     close(sd);
@@ -128,16 +126,13 @@ int main(void)
 
 void load_map_collision_array()
 {
-    
-    printf("LADDAR Array\n");
-    
     FILE *file;
     
-    file = fopen("test", "rb");
+    file = fopen("./maps/worldMap.bin", "rb");
     
     if (!file)
     {
-        printf("Unable to open file\n");
+        printf("Unable to open file");
     }
     else
     {
@@ -146,11 +141,11 @@ void load_map_collision_array()
     
     fclose(file);
     
-   printf("mapArray[1][1] = %c\n", mapArray[1][1]);
-
+    printf("WorldMap loaded!\n");
 }
 
-
+/*
+//Flytta till annan fil
 void * bullet_hit_thread(void *parameters)
 {
     int i, k;    
@@ -177,9 +172,10 @@ void * bullet_hit_thread(void *parameters)
         }
     }
 }
+*/
 
 
-
+//flytta till annan fil client 
 int find_free_slot(struct client clientInfo[], int n)
 {
     int i;
@@ -189,7 +185,7 @@ int find_free_slot(struct client clientInfo[], int n)
     return -1;                  // Return -1 if no spots.
 }
 
-
+//flytta till annan fil
 int find_team(struct client clientInfo[], int n)
 {
     int i;
@@ -213,7 +209,7 @@ int find_team(struct client clientInfo[], int n)
     return 1;
 }
 
-
+//flytta till annan fil
 void clear_client_struct(struct client *clientInfo)
 {
     clientInfo->mySlot = -1;                 //My Slot on the server
@@ -244,6 +240,8 @@ void clear_client_struct(struct client *clientInfo)
     
     clientInfo->speed = 1;                  //THe tanks speed
     clientInfo->tankCollision = 0;          // Zero if no collision if collision the one you are col
+    clientInfo->mapCollision = 0;          // Zero if no collision if collision the one you are col
+
     
     clientInfo->healthPoints = 100;           //Health of the tank 100 max 0 dead
     clientInfo->dead = 0;
@@ -253,9 +251,7 @@ void clear_client_struct(struct client *clientInfo)
 
 
 
-
-
-
+//DEBUGGER FILE
 void server_debugger_print(struct client clientInfo, int place)
 {
     printf("===============DEBUG PRINT=================\n");
@@ -289,12 +285,6 @@ void * debeugger_print_thread(void *parameters)
         printf("///////////////////////////////////////////////////////////\n");
     }
 }
-
-
-
-
-
-
 
 
 

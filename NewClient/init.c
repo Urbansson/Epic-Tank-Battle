@@ -52,14 +52,14 @@ int init_udp_tcp(int * udpSd, int * tcpSd, char *serverIp, char *serverPort)
 {
     
     *udpSd = udp_init();
-    if (udpSd == -1)
+    if (*udpSd == -1)
     {
         printf("udp init failed!\n");
         return FALSE;
     }
     
     *tcpSd = tcp_init(serverIp, serverPort);
-    if (tcpSd == -1)
+    if (*tcpSd == -1)
     {
         printf("tcp init failed!\n");
         return FALSE;

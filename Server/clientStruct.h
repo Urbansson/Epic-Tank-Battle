@@ -1,6 +1,9 @@
 #ifndef _CLIENTSTRUCT_H
 #define _CLIENTSTRUCT_H
 
+#include <pthread.h>
+
+//struct that stores all the information about clienten. (Might be betetr to split it up to subgroups)
 struct client
 {
     pthread_t threadId;         //Thread Id
@@ -33,10 +36,11 @@ struct client
     int bulletHitMe;            //If the client got hit by a bullet
     
     int speed;                  //THe tanks speed
-    int tankCollision;          // Zero if no collision if collision the one you are col
+    int tankCollision;          // 0 if no collision if collision the 1 you are col
+    int mapCollision;           // 0 if no collision with map objects 1 if you are.
     
     int healthPoints;           //Health of the tank 100 max 0 dead
-    int dead;
+    int dead;                   // 0 if alive 1 if dead
 };
 
 #endif

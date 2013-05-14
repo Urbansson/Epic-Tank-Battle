@@ -157,8 +157,10 @@ void *tank_calculations(void *parameters)
         }
 
         clientInfo->tankCollision = check_tank_tank_collision( &tempX, &tempY, clientInfo->mySlot, otherTanks);
+        clientInfo->mapCollision = check_worldmap_collision(tempX, tempY);
+
         
-        if (clientInfo->tankCollision == 0)
+        if (clientInfo->tankCollision == 0 && clientInfo->mapCollision == 0)
         {
             oldX = tempX;
             oldY = tempY;
@@ -168,6 +170,7 @@ void *tank_calculations(void *parameters)
             tempX = oldX;
             tempY = oldY;
         }
+        
 
         map_edge_collision(&tempX, &tempY);
         
