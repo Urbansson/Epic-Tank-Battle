@@ -28,11 +28,12 @@ SDL_Surface *init_sdl()
         return FALSE;
     }
     
+    //Initalize SDL_sound
     if (Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 4096) != 0)
     {
         printf("Could not open audio: %s\n", Mix_GetError());
         
-        exit(1);
+        return FALSE;
     }
     
     //Initialize SDL_ttf
@@ -42,7 +43,7 @@ SDL_Surface *init_sdl()
     }
     
     load_soundfiles();    
-    SDL_WM_SetCaption("Client", NULL);
+    SDL_WM_SetCaption("Tank Battle", NULL);
     
     
     return screen;

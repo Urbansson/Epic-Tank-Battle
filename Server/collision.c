@@ -2,8 +2,6 @@
 #define _COLLISION_C
 
 #include <math.h>
-#include <stdio.h>
-
 #include "collision.h"
 
 void * bullet_hit_thread(void *parameters)
@@ -42,12 +40,10 @@ int check_worldmap_collision(int x, int y)
     {
         if (mapArray[tempPos][y] == '1')
         {
-            //printf("Krock\n");
             return 1;
         }
         if (mapArray[tempPos][y+HITBOX_HIGHT] == '1')
         {
-            //printf("Krock\n");
             return 1;
         }
     }
@@ -55,41 +51,14 @@ int check_worldmap_collision(int x, int y)
     {
         if (mapArray[x][tempPos] == '1')
         {
-            //printf("Krock\n");
             return 1;
         }
         if (mapArray[x+HITBOX_WIDTH][tempPos] == '1')
         {
-            //printf("Krock\n");
             return 1;
         }
     }
-    /*
-    printf("MapArray är: %c\n", mapArray[x][y]);
-    
-    if (mapArray[x][y] == '1')
-    {
-        //printf("Krock\n");
-        return 1;
-    }
-    if (mapArray[x+HITBOX_WIDTH][y] == '1')
-    {
-        //printf("Krock\n");
-        return 1;
-    }
-    if (mapArray[x][y+HITBOX_HIGHT] == '1')
-    {
-        //printf("Krock\n");
-        return 1;
-    }
-    if (mapArray[x+HITBOX_WIDTH][y+HITBOX_HIGHT] == '1')
-    {
-        //printf("Krock\n");
-        return 1;
-    }
-    
-     */
-    //MÅSTE VARA FORLOOP FÖR ALLA VÄRDEN
+
     return 0;
 }
 

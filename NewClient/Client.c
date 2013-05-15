@@ -20,7 +20,7 @@
 #include "timers.h"
 #include "SDL_rotozoom.h"
 #include "calculations.h"
-
+#include "audio.h"
 
 #define MAX_PLAYERS 6
 #define FPS 60
@@ -91,22 +91,25 @@ int main(int argc, char *argv[])
     int bulletAngle[6];
     
     int oldCannonAngle[6];
-    int oldTankAngle[6] = {1000,1000,1000,1000,1000,1000};
-
-
+    int oldTankAngle[6];
+    
     //Other vars
     int i;
     
+    //Inits the player struct
     for (i = 0; i < MAX_PLAYERS; i++)
     {
-        
         player[i].slot = -1;
-        
+        player[i].connected = 0;
     }
-    
     
     //inits Sdl and opens the screen
     screen = init_sdl();
+    if(screen == 0)
+    {
+        printf("Error initializing SDL\n");
+        return 0;
+    }
     
     //Makes the connection to the server
     if(!(init_udp_tcp(&udpSd, &tcpSd, argv[1], argv[2])))
@@ -135,6 +138,7 @@ int main(int argc, char *argv[])
     recv(tcpSd, buffer, sizeof(buffer), 0);
     myId = atoi(buffer);
     
+    //Starts the Recive data thread
     pthread_create( &reciveUdpData, NULL, recive_udp_data, &(player));
 
     while (run)
@@ -217,7 +221,7 @@ int main(int argc, char *argv[])
                 continue;
             }
             
-            if (player[i].slot > -1)
+            if (player[i].slot > -1 && player[i].connected == 1)
             {
              
                 if (player[i].tankAngle != oldTankAngle[i])
@@ -250,7 +254,7 @@ int main(int argc, char *argv[])
                 continue;
             }
             
-            if (player[i].slot > -1)
+            if (player[i].slot > -1 && player[i].connected == 1)
             {
                 
                 if (player[i].cannonAngle != oldCannonAngle[i])
@@ -279,7 +283,7 @@ int main(int argc, char *argv[])
         //DRAWS ALL THE BULLETS ON THE SCREEEN+++++++++++++++++++++++++++
         for (i = 0; i < MAX_PLAYERS; i++)
         {
-            if (player[i].slot > -1)
+            if (player[i].slot > -1 && player[i].connected == 1)
             {
                 if (player[i].fire > 0)
                 {
@@ -287,6 +291,7 @@ int main(int argc, char *argv[])
                     {
                         SDL_FreeSurface( rotatedBullet[i] );
                         rotatedBullet[i] = rotozoomSurface(bullet,player[i].cannonAngle,1.0,0);
+                        playSound(soundShoot);
                     }
                     draw_bullet(&player[i], &camera, rotatedBullet[i], screen );
                     bulletAngle[i] = 1;
@@ -299,7 +304,6 @@ int main(int argc, char *argv[])
             }
         }
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
         
         //DRAWS THE USER INTERFACE ON SCREEN+++++++++++++++++++++++++++++
         
@@ -362,10 +366,20 @@ int main(int argc, char *argv[])
 void * recive_udp_data(void * parameters)
 {
     
+    struct timerInfo timeOut[MAX_PLAYERS];
+    int i;
     char buffer[128];
     struct stcInfo moveInfo;
     
     struct playerInfo * player = (struct playerInfo*) parameters;
+    
+    
+    
+    //Init the timer
+    for (i = 0; i < MAX_PLAYERS; i++)
+    {
+        timer_init(&timeOut[i]);
+    }
     
     while (1)
     {
@@ -376,8 +390,7 @@ void * recive_udp_data(void * parameters)
         
         sscanf(buffer, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", &moveInfo.team,&moveInfo.x, &moveInfo.y , &moveInfo.player, &moveInfo.mouseX, &moveInfo.mouseY,&moveInfo.fire, &moveInfo.bulletX, &moveInfo.bulletY, &moveInfo.tankAngle, &moveInfo.cannonAngle, &moveInfo.dead, &moveInfo.healthPoints, &moveInfo.redPoints, &moveInfo.bluePoints);
         
-        //printf("RECIVED: %s\n", buffer);
-        
+        timer_start(&timeOut[moveInfo.player]);
         
         //Saves the incoming data in the players struct.
         player[moveInfo.player].slot = moveInfo.player;
@@ -400,8 +413,20 @@ void * recive_udp_data(void * parameters)
         player[moveInfo.player].healthPoints = moveInfo.healthPoints;
         player[moveInfo.player].dead = moveInfo.dead;
         
+        player[moveInfo.player].connected = 1;
+        
         redPoints = moveInfo.redPoints;
         bluePoints = moveInfo.bluePoints;
+
+        //If no new udp from a client it disconnects after 0.5 sec
+        for (i = 0; i < MAX_PLAYERS; i++)
+        {
+            if (timer_get_ticks(&timeOut[i]) > 500)
+            {
+                player[i].connected = 0;
+                timer_stop(&timeOut[i]);
+            }  
+        }
         
         sleep(0);
     }

@@ -15,6 +15,9 @@ struct timerInfo
     int running;
 };
 
+void timer_init (struct timerInfo * timer);
+
+void timer_stop(struct timerInfo * timer);
 
 void timer_start(struct timerInfo * timer);
 

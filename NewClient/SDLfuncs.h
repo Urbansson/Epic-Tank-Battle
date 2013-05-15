@@ -24,6 +24,8 @@ struct playerInfo
     int team;
     int healthPoints;
     int dead;
+    
+    int connected;
 };
 
 struct cameraInfo

@@ -1,10 +1,10 @@
 All: Server 
 
-Server: install_server.o install_internetfuncs.o install_calculations.o install_collision.o install_clientthreads.o
-	gcc install_server.o install_internetfuncs.o install_calculations.o install_collision.o install_clientthreads.o -o Server -lpthread -lm  
+Server: install_server.o install_internetfuncs.o install_debugger.o install_collision.o install_clientthreads.o
+	gcc install_server.o install_internetfuncs.o install_debugger.o install_collision.o install_clientthreads.o -o Server -lpthread -lm  
     
-install_calculations.o: calculations.c calculations.h
-	gcc -c calculations.c -o install_calculations.o   
+install_debugger.o: debugger.c debugger.h
+	gcc -c debugger.c -o install_debugger.o   
 
 install_server.o:   server.c 
 	gcc -c server.c -o install_server.o

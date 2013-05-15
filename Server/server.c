@@ -6,12 +6,9 @@
 #include <netdb.h>
 #include <pthread.h>
 
-#include <math.h>
-
 #include "internetFuncs.h"
-#include "calculations.h"
+#include "debugger.h"
 #include "collision.h"
-
 #include "protocol.h"
 #include "clientStruct.h"
 #include "clientThreads.h"
@@ -27,15 +24,9 @@
 
 void clear_client_struct(struct client *clientInfo);
 
-void server_debugger_print(struct client clientInfo, int place);
-
-void * debeugger_print_thread(void *parameters);
-
 int find_free_slot(struct client clientInfo[], int n);
 
 int find_team(struct client clientInfo[], int n);
-
-//void * bullet_hit_thread(void *parameters);
 
 void load_map_collision_array();
 
@@ -54,7 +45,7 @@ int main(void)
     
     int i;
     
-    //load_map_collision_array();
+    load_map_collision_array();
     
     // Init tcp
     sd = tcp_init();
@@ -72,7 +63,7 @@ int main(void)
     bluepoints = 0;
     
     //Starts the debug print thread
-    //pthread_create(&server_db_print,NULL,debeugger_print_thread,clientInfo);
+    pthread_create(&server_db_print,NULL,debeugger_print_thread,clientInfo);
     
     pthread_create(&bullet_hit,NULL,bullet_hit_thread,clientInfo);
 
@@ -144,37 +135,6 @@ void load_map_collision_array()
     printf("WorldMap loaded!\n");
 }
 
-/*
-//Flytta till annan fil
-void * bullet_hit_thread(void *parameters)
-{
-    int i, k;    
-    struct client *clientInfo = (struct client *)parameters;
-
-    while (TRUE)
-    {
-        for (i = 0; i < MAX_PLAYERS; i++)
-        {
-            for (k = 0; k < MAX_PLAYERS; k++)
-            {
-                if (clientInfo[i].mySlot > -1  && clientInfo[k].mySlot > -1 && i != k && clientInfo[i].bulletHit == 0)
-                {                    
-                    if (clientInfo[i].bulletX <= clientInfo[k].xLocation + 64 && clientInfo[i].bulletX + 10 >= clientInfo[k].xLocation)
-                    {
-                        if (clientInfo[i].bulletY <= clientInfo[k].yLocation + 45 && clientInfo[i].bulletY + 10 >= clientInfo[k].yLocation)
-                        {
-                            clientInfo[i].bulletHit = 1;
-                            clientInfo[k].bulletHitMe = 1;
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-*/
-
-
 //flytta till annan fil client 
 int find_free_slot(struct client clientInfo[], int n)
 {
@@ -211,15 +171,15 @@ int find_team(struct client clientInfo[], int n)
 
 //flytta till annan fil
 void clear_client_struct(struct client *clientInfo)
-{
+{    
     clientInfo->mySlot = -1;                 //My Slot on the server
     clientInfo->sd = 0;                     //TCP-Socket descriptor
     strcpy(clientInfo->client_ip_addr, "0.0.0.0");      //Clients ip-address
     
     clientInfo->team = 0;                   //Indicates what team the client are in;
     
-    clientInfo->xLocation = 0;              //Where the client are located on the x-axis
-    clientInfo->yLocation = 0;              //Where the client are located on the y-axis
+    clientInfo->xLocation = -3000;              //Where the client are located on the x-axis
+    clientInfo->yLocation = -3000;              //Where the client are located on the y-axis
     
     clientInfo->forward = 0;                //if the client are moving forward
     clientInfo->backward = 0;               //if the client are moving backwards
@@ -247,45 +207,9 @@ void clear_client_struct(struct client *clientInfo)
     clientInfo->dead = 0;
     
     clientInfo->free = 0;                   //Flag that indicates if the slot is free. 1 == taken 0 == free
+    
+    printf("Struct is now cleared!\n");
 }
-
-
-
-//DEBUGGER FILE
-void server_debugger_print(struct client clientInfo, int place)
-{
-    printf("===============DEBUG PRINT=================\n");
-    
-    printf("Clients server Slot: %d\n", clientInfo.mySlot+1);
-    printf("Clients Ip-address: %s\n", clientInfo.client_ip_addr);
-    
-    if (clientInfo.free == 0)
-        printf("Server free flag: Free\n");
-    else
-        printf("Server free flag: Taken\n");
-    
-    printf("\n");
-    printf("\n");
-    printf("===========================================\n");
-}
-
-
-void * debeugger_print_thread(void *parameters)
-{
-    int i;
-    
-    struct client *clientInfo = (struct client *)parameters;
-    for (;;)
-    {
-        for (i = 0; i < MAX_PLAYERS ; i++)
-        {
-            server_debugger_print(clientInfo[i], i);
-        }
-        sleep(2);//refresh timer
-        printf("///////////////////////////////////////////////////////////\n");
-    }
-}
-
 
 
 

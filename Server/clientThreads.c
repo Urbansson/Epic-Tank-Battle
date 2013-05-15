@@ -12,7 +12,6 @@
 #include <math.h>
 
 #include "internetFuncs.h"
-#include "calculations.h"
 #include "collision.h"
 
 #include "protocol.h"
@@ -101,13 +100,19 @@ void *client_handler_function(void *parameters)
     
     printf("Disconnection from: %s\n", clientInfo->client_ip_addr);
     
+    //resets Tank collision vars
+    otherTanks[clientInfo->mySlot].x = -1000;
+    otherTanks[clientInfo->mySlot].y = -1000;
+    
+    //Somekind of bugg with the clear clint struct
+    //clientInfo->free = 0;
     //Clears upd socket so server dont spend time sending to nothing
-    udpCliInfo[clientInfo->mySlot].udpsocksd = -1;
+    //udpCliInfo[clientInfo->mySlot].udpsocksd = -1;
     
     //Clear clint information strcut so a new connection can take it
-    clear_client_struct(&clientInfo[clientInfo->mySlot]);
-    
-    return NULL;
+    clear_client_struct(clientInfo);
+    //clear_client_struct(&clientInfo[clientInfo->mySlot]);
+        return NULL;
 }
 
 void *tank_calculations(void *parameters)
@@ -119,11 +124,10 @@ void *tank_calculations(void *parameters)
     float tempY = 850;
     int oldX, oldY;
     
+    srand(time(NULL));
+    
     for (;;)
     {
-        
-        
-        
         if (clientInfo->turnLeft)
         {
             clientInfo->tankAngle += 1;
@@ -152,8 +156,8 @@ void *tank_calculations(void *parameters)
             
         if (clientInfo->backward)
         {
-            tempX -= clientInfo->speed*cos(tempAngle);
-            tempY -= clientInfo->speed*sin(tempAngle);
+            tempX -= (clientInfo->speed*cos(tempAngle))/2;
+            tempY -= (clientInfo->speed*sin(tempAngle))/2;
         }
 
         clientInfo->tankCollision = check_tank_tank_collision( &tempX, &tempY, clientInfo->mySlot, otherTanks);
@@ -170,21 +174,20 @@ void *tank_calculations(void *parameters)
             tempX = oldX;
             tempY = oldY;
         }
-        
-
+    
         map_edge_collision(&tempX, &tempY);
         
         // Sets The collision var and the movement var that will be sent to the server.
         otherTanks[clientInfo->mySlot].x = clientInfo->xLocation = tempX;
         otherTanks[clientInfo->mySlot].y =clientInfo->yLocation = tempY;
         
-        //Calculates the Angle
+        //Calculates the Angle of the tank cannon
         clientInfo->cannonAngle = (atan2(clientInfo->mouseY-300, clientInfo->mouseX-400))*(180/M_PI);
         
-        
+        //If bullet hits you take 35 damage
          if (clientInfo->bulletHitMe == 1)
          {
-             clientInfo->healthPoints -= 35;
+             clientInfo->healthPoints -= 30 + rand() % 10;
              clientInfo->bulletHitMe = 0;
          }
         
@@ -200,15 +203,18 @@ void *tank_calculations(void *parameters)
             {
                 bluepoints++;
             }
-            sleep(4);
-            clientInfo->dead = 0;
-            //Random a number in the spawn point on the right side
-            tempX = 120;
-            tempY = 900;
-            clientInfo->healthPoints = 100;
-            clientInfo->bulletHitMe = 0;
+                //Respawn timer if you die you have to wait
+                sleep(4);
+                clientInfo->dead = 0;
+            
+                //Random a number in the spawn point on the right side
+                tempX = 120;
+                tempY = 900;
+            
+            
+                clientInfo->healthPoints = 100;
+                clientInfo->bulletHitMe = 0;
         }
-        
         
         //around 200 calcs every sec
         usleep(5000);
@@ -247,7 +253,7 @@ void *bullet_movement_calc(void *parameters)
         }
         
         clientInfo->fire++;
-        usleep(2000);
+        usleep(1800);
         
     }
     

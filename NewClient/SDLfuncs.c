@@ -29,7 +29,7 @@ void handel_input(SDL_Event * event, int tcpSd )
         {
             case SDL_BUTTON_LEFT:
                 commands.mouseInput = 'L';
-								playSound(soundShoot);
+                //playSound(soundShoot);
                 //printf("LMB \n");
                 break;
             case SDL_BUTTON_RIGHT:
